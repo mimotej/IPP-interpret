@@ -2,6 +2,9 @@ import xml.etree.ElementTree as ET
 import sys
 import argparse
 import re
+
+FrameStack=[]
+Labels={}
 def parse_arguments():
     argparser=argparse.ArgumentParser(add_help=False)
     argparser.add_argument('--help', action="store_true")
@@ -25,11 +28,13 @@ def check_constant(name, arg):
     elif(type=="var"):
         if(re.search('^[a-zA-Z\*_\-\$&\%!\?]', name.find(arg).text[3]) == None):
            exit(11)
-
     elif(type=="string"):
-       if(name.find('arg1').text.find('\\') != -1):
+       if(name.find(arg).text.find('\\') != -1):
             if (re.search('[\\\\][0-9][0-9][0-9]', name.find(arg).text) != None):
                 exit(11)
+    elif(type == "label"):
+        if(re.search('^[a-zA-Z\*_\-\$&\%!\?]', name.find(arg).text[3]) == None):
+            exit(11)
 def parse_instruction(name):
     no_operands=[name.get('opcode').upper() == ("CREATEFRAME"),
                  name.get('opcode').upper() == ("POPFRAME"),
@@ -69,17 +74,21 @@ def parse_instruction(name):
                      name.get('opcode').upper() == ("SETCHAR"),]
     three_operand_label=[name.get('opcode').upper() == ("JUMPIFEQ"),
                          name.get('opcode').upper() == ("JUMPIFNEQ"),]
-
-    if(len(list(name)) == 1 or len(list(name)) == 2):
+    if(len(list(name)) == 1 or len(list(name)) == 2 or len(list(name)) == 3):
         constants_arg1=[name.find('arg1').attrib['type']=="string",
                     name.find('arg1').attrib['type']=="bool",
                     name.find('arg1').attrib['type']=="int",
                     name.find('arg1').attrib['type']=="nil",]
-    elif(len(list(name)) == 2):
+    if(len(list(name)) == 2 or len(list(name)) == 3):
         constants_arg2=[name.find('arg2').attrib['type']=="string",
                     name.find('arg2').attrib['type']=="bool",
                     name.find('arg2').attrib['type']=="int",
                     name.find('arg2').attrib['type']=="nil",]
+    if(len(list(name)) == 3):
+        constants_arg3=[name.find('arg3').attrib['type']=="string",
+                    name.find('arg3').attrib['type']=="bool",
+                    name.find('arg3').attrib['type']=="int",
+                    name.find('arg3').attrib['type']=="nil,"]
     if(any(no_operands)):
         if(len(list(name)) != 0):
             exit(55)
@@ -96,15 +105,51 @@ def parse_instruction(name):
               return
         print("error")
     elif(any(one_operand_label)):
-        pass
+        if(len(list(name)) == 1):
+            if(name.find('arg1').attrib['type'] =="label"):
+              check_constant(name, 'arg1')
+              ### Zaznamenání labelu do slovníku
+              if name.get('opcode').upper() == ("LABEL"):
+                  if name.find('arg1').text in Labels:
+                      exit(11)
+                  Labels[name.find('arg1').text]=name.get('order')
+              return
+        print("error")
     elif(any(two_operand_read)):
-        pass
+        if(len(list(name)) == 2):
+            if(name.find('arg1').attrib['type'] == "var"):
+                check_constant(name, 'arg1')
+                if(any(constants_arg2)):
+                    check_constant(name, 'arg2')
+                    return
     elif (any(two_operand)):
-        pass
+        if (len(list(name)) == 2):
+            if (name.find('arg1').attrib['type'] == "var"):
+                check_constant(name, 'arg1')
+                if (any(constants_arg2) or name.find('arg2').attrib['type'] == "var"):
+                    check_constant(name, 'arg2')
+                    return
+        exit(11)
     elif (any(three_operand)):
-        pass#print(len(list(name)))
+       if (len(list(name)) == 3):
+           if(name.find('arg1').attrib['type'] == "var"):
+               check_constant(name, 'arg1')
+               if (any(constants_arg2) or name.find('arg2').attrib['type'] == "var"):
+                   check_constant(name, 'arg2')
+                   if (any(constants_arg3) or name.find('arg3').attrib['type'] == "var"):
+                       check_constant(name, 'arg3')
+                       return
+       exit(11)
     elif (any(three_operand_label)):
-        pass
+        if(len(list(name)) == 3):
+            if(name.find('arg1').attrib['type'] == "label"):
+                if (re.search('^[a-zA-Z\*_\-\$&\%!\?]', name.find('arg1').text[3]) == None):
+                    exit(11)
+                if (any(constants_arg2) or name.find('arg2').attrib['type'] == "var"):
+                    check_constant(name, 'arg2')
+                if (any(constants_arg3) or name.find('arg3').attrib['type'] == "var"):
+                    check_constant(name, 'arg3')
+                    return
     else:
         print("Error unknown instruction\n")
         exit(11)
@@ -129,7 +174,10 @@ if(args.source == None):
 else:
     tree=ET.parse(source)
 root=tree.getroot()
+if(root.get('language').upper() != "IPPCODE20"):
+    exit(11)
 #1. syntaktická kontrola (základní kontrola možný argumentů a ukládání labelů pro 2. kontrolu
 for name in root.findall('instruction'):
     print(name.get('opcode') + " pozice: " + name.get('order'))
     parse_instruction(name)
+    print(Labels)
