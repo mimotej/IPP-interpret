@@ -7,6 +7,7 @@ FrameStack=[]
 Temporary_frame={"defined" : "no"}
 Global_frame={}
 Labels={}
+Stack_call=[]
 def parse_arguments():
     argparser=argparse.ArgumentParser(add_help=False)
     argparser.add_argument('--help', action="store_true")
@@ -24,7 +25,7 @@ def check_constant(name, arg):
             exit(11)
     elif(type == "int"):
         try:
-            value = int(name.find(arg).text)
+            value = int(name.find(arg).text[4:])
         except ValueError:
             exit(11)
     elif(type=="var"):
@@ -80,17 +81,20 @@ def parse_instruction(name):
         constants_arg1=[name.find('arg1').attrib['type']=="string",
                     name.find('arg1').attrib['type']=="bool",
                     name.find('arg1').attrib['type']=="int",
-                    name.find('arg1').attrib['type']=="nil",]
+                    name.find('arg1').attrib['type']=="nil",
+                    name.find('arg1').attrib['type'] == "float",]
     if(len(list(name)) == 2 or len(list(name)) == 3):
         constants_arg2=[name.find('arg2').attrib['type']=="string",
                     name.find('arg2').attrib['type']=="bool",
                     name.find('arg2').attrib['type']=="int",
-                    name.find('arg2').attrib['type']=="nil",]
+                    name.find('arg2').attrib['type']=="nil",
+                    name.find('arg1').attrib['type'] == "float",]
     if(len(list(name)) == 3):
         constants_arg3=[name.find('arg3').attrib['type']=="string",
                     name.find('arg3').attrib['type']=="bool",
                     name.find('arg3').attrib['type']=="int",
-                    name.find('arg3').attrib['type']=="nil,"]
+                    name.find('arg3').attrib['type']=="nil,",
+                    name.find('arg1').attrib['type'] == "float",]
     if(any(no_operands)):
         if(len(list(name)) != 0):
             exit(55)
@@ -114,7 +118,7 @@ def parse_instruction(name):
               if name.get('opcode').upper() == ("LABEL"):
                   if name.find('arg1').text in Labels:
                       exit(11)
-                  Labels[name.find('arg1').text]=name.get('order')
+                  Labels[name.find('arg1').text]=int(name.get('order'))
               return
         print("error")
     elif(any(two_operand_read)):
@@ -155,45 +159,98 @@ def parse_instruction(name):
     else:
         print("Error unknown instruction\n")
         exit(11)
-def sematic_check(name):
+def sematic_check(root, instruction_number):
     global Temporary_frame
     global FrameStack
-    if (name.get('opcode').upper() == "CREATEFRAME"):
-         Temporary_frame.clear()
-         Temporary_frame["defined"]="yes"
-
-    if (name.get('opcode').upper() == "PUSHFRAME"):
-      if (Temporary_frame["defined"] == "no"):
-        exit(55)
-      FrameStack.append(copy.deepcopy(Temporary_frame))
-      Temporary_frame.clear()
-      Temporary_frame["defined"]="no"
-
-    if (name.get('opcode').upper() == "POPFRAME"):
-       if (len(FrameStack) == 0):
-           exit(55)
-       Temporary_frame=FrameStack.pop()
-
-    if (name.get('opcode').upper() == "DEFVAR"):
-       print(name.find('arg1').text[:2])
-       if(name.find('arg1').text[:2] == "GF"):
-          if(name.find('arg1').text[3:] in Global_frame):
+    shcontinue= False
+    for name in root.findall('instruction'):
+        shcontinue=False
+        while instruction_number != int(name.get('order')):
+            if(instruction_number > int(name.get('order'))):
+                shcontinue=True
+                break
+            shcontinue=False
+            break
+        if(shcontinue == True):
+            continue
+        print(name.get('opcode') + " pozice: " + name.get('order'))
+        if (name.get('opcode').upper() == "CREATEFRAME"):
+           Temporary_frame.clear()
+           Temporary_frame["defined"]="yes"
+        if (name.get('opcode').upper() == "PUSHFRAME"):
+           if (Temporary_frame["defined"] == "no"):
+                exit(55)
+           FrameStack.append(copy.deepcopy(Temporary_frame))
+           Temporary_frame.clear()
+           Temporary_frame["defined"]="no"
+        if(name.get('opcode').upper() == "RETURN"):
+            if(len(Stack_call) == 0):
+                exit(56)
+            instruction_number=Stack_call.pop()
+            instruction_number+=1
+            sematic_check(root, instruction_number)
+            break
+        if (name.get('opcode').upper() == "POPFRAME"):
+           if (len(FrameStack) == 0):
               exit(55)
-          Global_frame[name.find('arg1').text[3:]] = ""
-       elif(name.find('arg1').text[:2] == "LF"):
-           if(len(FrameStack) == 0):
-               exit(55)
-           if (name.find('arg1').text[3:] in FrameStack[0]):
-               exit(55)
-           FrameStack[0][name.find('arg1').text[3:]] = ""
-       elif(name.find('arg1').text[:2] == "TF"):
-           if (name.find('arg1').text[3:] in Temporary_frame):
-               exit(55)
-           Temporary_frame[name.find('arg1').text[3:]] = ""
-       else:
-           exit(55)
+           Temporary_frame=FrameStack.pop()
 
-
+        if (name.get('opcode').upper() == "DEFVAR"):
+           if(name.find('arg1').text[:2] == "GF"):
+              if(name.find('arg1').text[3:] in Global_frame):
+                  exit(55)
+              Global_frame[name.find('arg1').text[3:]] = ""
+           elif(name.find('arg1').text[:2] == "LF"):
+              if(len(FrameStack) == 0):
+                  exit(55)
+              if (name.find('arg1').text[3:] in FrameStack[0]):
+                  exit(55)
+              FrameStack[0][name.find('arg1').text[3:]] = ""
+           elif(name.find('arg1').text[:2] == "TF"):
+             if (name.find('arg1').text[3:] in Temporary_frame):
+               exit(55)
+             Temporary_frame[name.find('arg1').text[3:]] = ""
+           else:
+             exit(55)
+        if (name.get('opcode').upper() == "JUMP"):
+            try:
+                instruction_number=Labels[name.find('arg1').text]
+            except:
+                exit(55)
+            instruction_number+=1
+            sematic_check(root, instruction_number)
+            break
+        if (name.get('opcode').upper() == "CALL"):
+            try:
+                instruction_number=Labels[name.find('arg1').text]
+            except:
+                exit(55)
+            instruction_number+=1
+            Stack_call.append(int(name.get('order')))
+            sematic_check(root, instruction_number)
+            break
+        if (name.get('opcode').upper() == "WRITE"):
+            if(name.find('arg1').attrib['type']=="var"):
+                try:
+                    tmp_value = Labels[name.find('arg1').text[3:]]
+                except:
+                    exit(55)
+                if(tmp_value[:6] == "string"):
+                    print(tmp_value[7:], end='')
+                elif(tmp_value[:3] == "int"):
+                    print(tmp_value[4:], end='')
+                elif(tmp_value[:3] == "nil"):
+                    print(tmp_value[4:], end='')
+                elif(tmp_value[:5] == "float"):
+                    print(tmp_value[6:], end='')
+            elif(name.find('arg1').attrib['type']=="string"):
+                print(name.find('arg1').text[7:], end='')
+            elif(name.find('arg1').attrib['type']=="int"):
+                print(name.find('arg1').text[4:], end='')
+            elif(name.find('arg1').attrib['type']=="nil"):
+                print(name.find('arg1').text[4:], end='')
+            elif(name.find('arg1').attrib['type']=="float"):
+                print(name.find('arg1').text[6:], end='')
 args=parse_arguments()
 source=args.source
 input=args.source
@@ -219,6 +276,4 @@ if(root.get('language').upper() != "IPPCODE20"):
 for name in root.findall('instruction'):
     parse_instruction(name)
 #2. Běh sematicka kontrola a interpretace
-for name in root.findall('instruction'):
-    print(name.get('opcode') + " pozice: " + name.get('order'))
-    sematic_check(name)
+sematic_check(root, 1)
