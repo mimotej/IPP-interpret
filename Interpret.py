@@ -2,8 +2,10 @@ import xml.etree.ElementTree as ET
 import sys
 import argparse
 import re
-
+import copy
 FrameStack=[]
+Temporary_frame={"defined" : "no"}
+Global_frame={}
 Labels={}
 def parse_arguments():
     argparser=argparse.ArgumentParser(add_help=False)
@@ -153,6 +155,43 @@ def parse_instruction(name):
     else:
         print("Error unknown instruction\n")
         exit(11)
+def sematic_check(name):
+    global Temporary_frame
+    global FrameStack
+    if (name.get('opcode').upper() == "CREATEFRAME"):
+         Temporary_frame.clear()
+         Temporary_frame["defined"]="yes"
+
+    if (name.get('opcode').upper() == "PUSHFRAME"):
+      if (Temporary_frame["defined"] == "no"):
+        exit(55)
+      FrameStack.append(copy.deepcopy(Temporary_frame))
+      Temporary_frame.clear()
+      Temporary_frame["defined"]="no"
+
+    if (name.get('opcode').upper() == "POPFRAME"):
+       if (len(FrameStack) == 0):
+           exit(55)
+       Temporary_frame=FrameStack.pop()
+
+    if (name.get('opcode').upper() == "DEFVAR"):
+       print(name.find('arg1').text[:2])
+       if(name.find('arg1').text[:2] == "GF"):
+          if(name.find('arg1').text[3:] in Global_frame):
+              exit(55)
+          Global_frame[name.find('arg1').text[3:]] = ""
+       elif(name.find('arg1').text[:2] == "LF"):
+           if(len(FrameStack) == 0):
+               exit(55)
+           if (name.find('arg1').text[3:] in FrameStack[0]):
+               exit(55)
+           FrameStack[0][name.find('arg1').text[3:]] = ""
+       elif(name.find('arg1').text[:2] == "TF"):
+           if (name.find('arg1').text[3:] in Temporary_frame):
+               exit(55)
+           Temporary_frame[name.find('arg1').text[3:]] = ""
+       else:
+           exit(55)
 
 
 args=parse_arguments()
@@ -178,6 +217,8 @@ if(root.get('language').upper() != "IPPCODE20"):
     exit(11)
 #1. syntaktická kontrola (základní kontrola možný argumentů a ukládání labelů pro 2. kontrolu
 for name in root.findall('instruction'):
-    print(name.get('opcode') + " pozice: " + name.get('order'))
     parse_instruction(name)
-    print(Labels)
+#2. Běh sematicka kontrola a interpretace
+for name in root.findall('instruction'):
+    print(name.get('opcode') + " pozice: " + name.get('order'))
+    sematic_check(name)
