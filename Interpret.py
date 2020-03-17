@@ -21,7 +21,7 @@ def parse_arguments():
 def check_constant(name, arg):
     type=name.find(arg).attrib['type']
     if(type == "bool"):
-        if(name.find(arg).text !="true" and name.find('arg1').text !="false"):
+        if(name.find(arg).text !="true" and name.find(arg).text !="false"):
             exit(11)
     elif(type == "int"):
         try:
@@ -159,6 +159,104 @@ def parse_instruction(name):
     else:
         print("Error unknown instruction\n")
         exit(11)
+#### pomocná funkce na zpracování hodnot pro aritmetické fce
+def find_value(arg, name):
+    if (name.find(arg).attrib['type'] == "var"):
+        if (name.find(arg).text[:2] == "GF"):
+            if (name.find(arg).text[3:] in Global_frame):
+                if (Global_frame[name.find(arg).text[3:]][1] != "int"):
+                    exit(55)
+            else:
+                exit(55)
+            value = Global_frame[name.find('arg2').text[3:]][0]
+        elif (name.find(arg).text[:2] == "LF"):
+            if (len(FrameStack) == 0):
+                exit(55)
+            if (name.find(arg).text[3:] in FrameStack[0]):
+                if (FrameStack[0][name.find(arg).text[3:]][1] != "int"):
+                    exit(55)
+            else:
+                exit(55)
+            value = FrameStack[0][name.find('arg2').text[3:]][0]
+        elif (name.find(arg).text[:2] == "TF"):
+            if (name.find(arg).text[3:] in Temporary_frame):
+                if (Temporary_frame[name.find(arg).text[3:]][1] != "int"):
+                    exit(55)
+            else:
+                exit(55)
+            value = Temporary_frame[name.find(arg).text[3:]][0]
+    elif(name.find(arg).attrib['type'] == "int"):
+        try:
+            value=int(name.find(arg).text)
+        except:
+            exit(55)
+    else:
+        exit(55)
+    return value
+
+def get_value_comparasion(name):
+    arg='arg2'
+    i=0
+    return_value=[]
+    while i<2:
+     value = []
+     if (name.find(arg).attrib['type'] == "var"):
+        if (name.find(arg).text[:2] == "GF"):
+            if (name.find(arg).text[3:] in Global_frame):
+                if (Global_frame[name.find(arg).text[3:]][1] != "int" or
+                    Global_frame[name.find(arg).text[3:]][1] != "string" or
+                    Global_frame[name.find(arg).text[3:]][1] != "bool" or
+                    Global_frame[name.find(arg).text[3:]][1] != "nil"):
+
+                    exit(55)
+            else:
+                exit(55)
+            value.append(Global_frame[name.find(arg).text[3:]][0])
+            value.append(Global_frame[name.find(arg).text[3:]][1])
+        elif (name.find(arg).text[:2] == "LF"):
+            if (len(FrameStack) == 0):
+                exit(55)
+            if (name.find(arg).text[3:] in FrameStack[0]):
+                if (FrameStack[0][name.find(arg).text[3:]][1] != "int" or
+                    FrameStack[0][name.find(arg).text[3:]][1] != "string" or
+                    FrameStack[0][name.find(arg).text[3:]][1] != "bool" or
+                    FrameStack[0][name.find(arg).text[3:]][1] != "nil"):
+                    exit(55)
+            else:
+                exit(55)
+            value.append(FrameStack[0][name.find(arg).text[3:]][0])
+            value.append(FrameStack[0][name.find(arg).text[3:]][1])
+        elif (name.find(arg).text[:2] == "TF"):
+            if (name.find(arg).text[3:] in Temporary_frame):
+                if (Temporary_frame[name.find(arg).text[3:]][1] != "int" or
+                    Temporary_frame[name.find(arg).text[3:]][1] != "string" or
+                    Temporary_frame[name.find(arg).text[3:]][1] != "int" or
+                    Temporary_frame[name.find(arg).text[3:]][1] != "int"):
+                    exit(55)
+            else:
+                exit(55)
+            value.append(Temporary_frame[name.find(arg).text[3:]][0])
+            value.append(Temporary_frame[name.find(arg).text[3:]][1])
+     elif(name.find(arg).attrib['type']=="string",
+          name.find(arg).attrib['type']=="bool",
+          name.find(arg).attrib['type']=="int",
+          name.find(arg).attrib['type'] == "float",):
+        if(name.find(arg).attrib['type']=="int"):
+           value.append(int(name.find(arg).text))
+        elif(name.find(arg).attrib['type']=="bool"):
+           if (name.find(arg).text =="false"):
+              value.append(False)
+           else:
+               value.append(True)
+        else:
+           value.append(name.find(arg).text)
+        value.append(name.find(arg).attrib['type'])
+     else:
+         exit(55)
+     i+=1
+     arg='arg3'
+     return_value.append(value)
+    return return_value
 def sematic_check(root, instruction_number):
     global Temporary_frame
     global FrameStack
@@ -250,7 +348,7 @@ def sematic_check(root, instruction_number):
                         pass
                     else:
                         exit(55)
-                    print(Global_frame[name.find('arg1').text[3:]][0])
+                    print(Global_frame[name.find('arg1').text[3:]][0][0])
                 elif (name.find('arg1').text[:2] == "LF"):
                     if (len(FrameStack) == 0):
                         exit(55)
@@ -258,7 +356,7 @@ def sematic_check(root, instruction_number):
                         pass
                     else:
                         exit(55)
-                    print(FrameStack[0][name.find('arg1').text[3:]][0])
+                    print(FrameStack[0][name.find('arg1').text[3:]][0][0])
                 elif (name.find('arg1').text[:2] == "TF"):
                     if (name.find('arg1').text[3:] in Temporary_frame):
                         pass
@@ -345,128 +443,71 @@ def sematic_check(root, instruction_number):
                    exit(55)
            else:
                exit(55)
+        type=""
         if (any(three_operand)):
             if(name.get('opcode').upper() == "ADD"):
-                if(name.find('arg2').attrib['type'] == "var"):
-                   if (name.find('arg2').text[:2] == "GF"):
-                        if (name.find('arg2').text[3:] in Global_frame):
-                            pass
-                        else:
-                            exit(55)
-                        first_value = Global_frame[name.find('arg2').text[3:]][0]
-                   elif (name.find('arg2').text[:2] == "LF"):
-                        if (len(FrameStack) == 0):
-                            exit(55)
-                        if (name.find('arg2').text[3:] in FrameStack[0]):
-                            pass
-                        else:
-                            exit(55)
-                        first_value = FrameStack[0][name.find('arg2').text[3:]][0]
-                   elif (name.find('arg2').text[:2] == "TF"):
-                        if (name.find('arg2').text[3:] in Temporary_frame):
-                            pass
-                        else:
-                            exit(55)
-                        first_value = Temporary_frame[name.find('arg2').text[3:]][0]
-                if(name.find('arg3').attrib['type'] == "var"):
-                      if (name.find('arg3').text[:2] == "GF"):
-                          if (name.find('arg3').text[3:] in Global_frame):
-                              if(Global_frame[name.find('arg3').text[3:]][1] != "int"):
-                                  exit(55)
-                          else:
-                              exit(55)
-                          second_value = Global_frame[name.find('arg3').text[3:]][0]
-                      elif (name.find('arg3').text[:2] == "LF"):
-                          if (len(FrameStack) == 0):
-                              exit(55)
-                          if (name.find('arg3').text[3:] in FrameStack[0]):
-                              if (FrameStack[0][name.find('arg3').text[3:]][1] != "int"):
-                                  exit(55)
-                          else:
-                              exit(55)
-                          second_value = FrameStack[0][name.find('arg3').text[3:]][0]
-                      elif (name.find('arg3').text[:2] == "TF"):
-                          if (name.find('arg3').text[3:] in Temporary_frame):
-                              if (Temporary_frame[name.find('arg3').text[3:]][1] != "int"):
-                                  exit(55)
-                          else:
-                              exit(55)
-                          second_value = Temporary_frame[name.find('arg3').text[3:]][0]
-                if(name.find('arg3').attrib['type'] == "var")
-                ###### Tady pokračovat!
-                else:
-                 exit(54)
-
-                try:
-                  first_value = int(name.find('arg2').text)
-                  second_value = int(name.find('arg3').text)
-                except:
-                  exit(54)
+                first_value=find_value('arg2', name)
+                second_value=find_value('arg3', name)
+                result=first_value+second_value
+                type="int"
             elif(name.get('opcode').upper() == "SUB"):
-                if(name.find('arg2').attrib['type'] == "int" and name.find('arg3').attrib['type'] == "int"):
-                 try:
-                    first_value=int(name.find('arg2').text)
-                    second_value=int(name.find('arg3').text)
-                 except:
-                    exit(54)
-                 result=first_value-second_value
-                else:
-                 exit(54)
+                first_value=find_value('arg2', name)
+                second_value=find_value('arg3', name)
+                result=first_value-second_value
+                type="int"
             elif (name.get('opcode').upper() == "MUL"):
-                if(name.find('arg2').attrib['type'] == "int" and name.find('arg3').attrib['type'] == "int"):
-                 try:
-                    first_value=int(name.find('arg2').text)
-                    second_value=int(name.find('arg3').text)
-                 except:
-                    exit(54)
-                 result=first_value*second_value
-                else:
-                 exit(54)
+                first_value=find_value('arg2', name)
+                second_value=find_value('arg3', name)
+                result=first_value*second_value
+                type="int"
             elif (name.get('opcode').upper() == "IDIV"):
-                if(name.find('arg2').attrib['type'] == "int" and name.find('arg3').attrib['type'] == "int"):
-                 try:
-                    first_value=int(name.find('arg2').text)
-                    second_value=int(name.find('arg3').text)
-                 except:
+                first_value=find_value('arg2', name)
+                second_value=find_value('arg3', name)
+                result=first_value//second_value
+                type="int"
+            elif(name.get('opcode').upper() == "LT"):
+                values=get_value_comparasion(name)
+                if(values[0][1] == "nil" or values[1][1]=="nil"):
                     exit(54)
-                 result=first_value//second_value
-                else:
-                 exit(54)
-            if(name.get('opcode').upper() == "LT"):
-                first_type=type(name.find('arg2').text)
-                second_type=type(name.find('arg3').text)
-                if (name.find('arg2').attrib['type'] == "nil"):
+                if(values[0][1] != values[1][1]):
                     exit(54)
-                if(name.find('arg2').attrib['type'] == "bool"):
-                    pass
-                if(first_type != second_type):
-                    exit(55)
-                if(first_type == int):
-                    result=int(name.find('arg2').text) < int(name.find('arg3').text)
-                if(first_type == str):
-                    result=name.find('arg2').text < name.find('arg3').text
-            if (name.find('arg1').text[:2] == "GF"):
-                if (name.find('arg1').text[3:] in Global_frame):
-                    pass
-                else:
-                    exit(55)
-                Global_frame[name.find('arg1').text[3:]] = first_value
-            elif (name.find('arg1').text[:2] == "LF"):
-                if (len(FrameStack) == 0):
-                    exit(55)
-                if (name.find('arg1').text[3:] in FrameStack[0]):
-                    pass
-                else:
-                    exit(55)
-                FrameStack[0][name.find('arg1').text[3:]] = moved
-            elif (name.find('arg1').text[:2] == "TF"):
-                if (name.find('arg1').text[3:] in Temporary_frame):
-                    pass
-                else:
-                    exit(55)
-                Temporary_frame[name.find('arg1').text[3:]] = moved
+                result=values[0][0] < values[1][0]
+                type = values[0][1]
+            elif (name.get('opcode').upper() == "GT"):
+                values = get_value_comparasion(name)
+                if (values[0][1] == "nil" or values[1][1] == "nil"):
+                    exit(54)
+                if (values[0][1] != values[1][1]):
+                    exit(54)
+                result = values[0][0] > values[1][0]
+                type = values[0][1]
             else:
-                exit(55)
+                exit(54)
+            if (name.find('arg1').attrib['type'] == "var"):
+                if (name.find('arg1').text[:2] == "GF"):
+                    if (name.find('arg1').text[3:] in Global_frame):
+                        pass
+                    else:
+                        exit(55)
+                    Global_frame[name.find('arg1').text[3:]] = (result, type)
+                elif (name.find('arg1').text[:2] == "LF"):
+                    if (len(FrameStack) == 0):
+                        exit(55)
+                    if (name.find('arg1').text[3:] in FrameStack[0]):
+                        pass
+                    else:
+                        exit(55)
+                    FrameStack[0][name.find('arg1').text[3:]] = (result, type)
+                elif (name.find('arg1').text[:2] == "TF"):
+                    if (name.find('arg1').text[3:] in Temporary_frame):
+                        pass
+                    else:
+                        exit(55)
+                    Temporary_frame[name.find('arg1').text[3:]] = (result, type)
+                else:
+                    exit(55)
+
+
 
 
 
