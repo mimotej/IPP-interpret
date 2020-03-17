@@ -382,6 +382,8 @@ def sematic_check(root, instruction_number):
                     exit(54)
                 if(first_type == int):
                     result=int(name.find('arg2').text) < int(name.find('arg3').text)
+                if(first_type == str):
+                    result=name.find('arg2').text < name.find('arg3').text
             if (name.find('arg1').text[:2] == "GF"):
                 if (name.find('arg1').text[3:] in Global_frame):
                     pass
