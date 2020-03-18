@@ -24,6 +24,9 @@ def check_constant(name, arg):
         if(name.find(arg).text !="true" and name.find(arg).text !="false"):
             exit(11)
     elif(type == "int"):
+        print(name.find(arg).text)
+        if (name.find(arg).text == None):
+            return
         try:
             value = int(name.find(arg).text)
         except ValueError:
@@ -93,7 +96,7 @@ def parse_instruction(name):
         constants_arg3=[name.find('arg3').attrib['type']=="string",
                     name.find('arg3').attrib['type']=="bool",
                     name.find('arg3').attrib['type']=="int",
-                    name.find('arg3').attrib['type']=="nil,",
+                    name.find('arg3').attrib['type']=="nil",
                     name.find('arg1').attrib['type'] == "float",]
     if(any(no_operands)):
         if(len(list(name)) != 0):
@@ -472,7 +475,11 @@ def sematic_check(root, instruction_number):
                 if(values[0][1] != values[1][1]):
                     exit(54)
                 result=values[0][0] < values[1][0]
-                type = values[0][1]
+                if(result == True):
+                    result="true"
+                else:
+                    result="false"
+                type = "bool"
             elif (name.get('opcode').upper() == "GT"):
                 values = get_value_comparasion(name)
                 if (values[0][1] == "nil" or values[1][1] == "nil"):
@@ -480,7 +487,42 @@ def sematic_check(root, instruction_number):
                 if (values[0][1] != values[1][1]):
                     exit(54)
                 result = values[0][0] > values[1][0]
-                type = values[0][1]
+                if(result == True):
+                    result="true"
+                else:
+                    result="false"
+                type = "bool"
+            elif (name.get('opcode').upper() == "EQ"):
+                values = get_value_comparasion(name)
+                if (values[0][1] != "nil" and values[1][1] != "nil"):
+                    if (values[0][1] != values[1][1]):
+                        exit(54)
+                result = values[0][0] == values[1][0]
+                if(result == True):
+                    result="true"
+                else:
+                    result="false"
+                type = "bool"
+            elif(name.get('opcode').upper() == "AND"):
+                values= get_value_comparasion(name)
+                if(values[0][1] != "bool" or values[1][1] !="bool"):
+                    exit(55)
+                if(values[0][0] == True and values[1][0] == True):
+                    result="true"
+                    type="bool"
+                else:
+                    result="false"
+                    type="bool"
+            elif(name.get('opcode').upper() == "OR"):
+                values= get_value_comparasion(name)
+                if(values[0][1] != "bool" or values[1][1] !="bool"):
+                    exit(55)
+                if(values[0][0] == False and values[1][0] == False):
+                    result="false"
+                    type="bool"
+                else:
+                    result="true"
+                    type="bool"
             else:
                 exit(54)
             if (name.find('arg1').attrib['type'] == "var"):
