@@ -284,6 +284,7 @@ def sematic_check(root, instruction_number):
                          name.get('opcode').upper() == ("EQ"),
                          name.get('opcode').upper() == ("AND"),
                          name.get('opcode').upper() == ("OR"),
+                         name.get('opcode').upper() == ("NOT"),
                          name.get('opcode').upper() == ("STRI2INT"),
                          name.get('opcode').upper() == ("CONCAT"),
                          name.get('opcode').upper() == ("GETCHAR"),
@@ -523,6 +524,58 @@ def sematic_check(root, instruction_number):
                 else:
                     result="true"
                     type="bool"
+            elif(name.get('opcode').upper() == "NOT"):
+                if(name.find('arg2').attrib['type'] == "bool"):
+                    if(name.find('arg2').text == "false"):
+                        result="true"
+                        type="bool"
+                    else:
+                        result="false"
+                        type="bool"
+                elif(name.find('arg2').attrib['type'] == "var"):
+                    if (name.find('arg1').text[:2] == "GF"):
+                        if (name.find('arg1').text[3:] in Global_frame):
+                            pass
+                        else:
+                            exit(55)
+                        result=Global_frame[name.find('arg1').text[3:]]
+                    elif (name.find('arg1').text[:2] == "LF"):
+                        if (len(FrameStack) == 0):
+                            exit(55)
+                        if (name.find('arg1').text[3:] in FrameStack[0][0]):
+                            pass
+                        else:
+                            exit(55)
+                        result = FrameStack[0][name.find('arg1').text[3:]]
+                    elif (name.find('arg1').text[:2] == "TF"):
+                        if (name.find('arg1').text[3:] in Temporary_frame):
+                            pass
+                        else:
+                            exit(55)
+                        result= Temporary_frame[name.find('arg1').text[3:]]
+                    else:
+                        exit(55)
+                    if(result[1] != "bool"):
+                        exit(55)
+                    if(result[0] == "true"):
+                        result="false"
+                        type="bool"
+                    else:
+                        result="true"
+                        type= "bool"
+            elif(name.get('opcode').upper() == "STRI2INT"):
+                values=get_value_comparasion(name)
+                if(values[0][1] != "string"):
+                    exit(55)
+                if(values[1][1] != "int"):
+                    exit(55)
+                try:
+                    result=values[0][0][int(values[1][0])]
+                    result=ord(result)
+                    type="int"
+                except:
+                    exit(55)
+
             else:
                 exit(54)
             if (name.find('arg1').attrib['type'] == "var"):
