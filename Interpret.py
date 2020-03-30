@@ -1,3 +1,4 @@
+##NEED TO DO STRLEN, EXIT, READ, PUSHS, POPS ETC.
 import xml.etree.ElementTree as ET
 import sys
 import argparse
@@ -206,9 +207,9 @@ def get_value_comparasion(name):
      if (name.find(arg).attrib['type'] == "var"):
         if (name.find(arg).text[:2] == "GF"):
             if (name.find(arg).text[3:] in Global_frame):
-                if (Global_frame[name.find(arg).text[3:]][1] != "int" or
-                    Global_frame[name.find(arg).text[3:]][1] != "string" or
-                    Global_frame[name.find(arg).text[3:]][1] != "bool" or
+                if (Global_frame[name.find(arg).text[3:]][1] != "int" and
+                    Global_frame[name.find(arg).text[3:]][1] != "string" and
+                    Global_frame[name.find(arg).text[3:]][1] != "bool" and
                     Global_frame[name.find(arg).text[3:]][1] != "nil"):
 
                     exit(55)
@@ -220,9 +221,9 @@ def get_value_comparasion(name):
             if (len(FrameStack) == 0):
                 exit(55)
             if (name.find(arg).text[3:] in FrameStack[0]):
-                if (FrameStack[0][name.find(arg).text[3:]][1] != "int" or
-                    FrameStack[0][name.find(arg).text[3:]][1] != "string" or
-                    FrameStack[0][name.find(arg).text[3:]][1] != "bool" or
+                if (FrameStack[0][name.find(arg).text[3:]][1] != "int" and
+                    FrameStack[0][name.find(arg).text[3:]][1] != "string" and
+                    FrameStack[0][name.find(arg).text[3:]][1] != "bool" and
                     FrameStack[0][name.find(arg).text[3:]][1] != "nil"):
                     exit(55)
             else:
@@ -231,10 +232,11 @@ def get_value_comparasion(name):
             value.append(FrameStack[0][name.find(arg).text[3:]][1])
         elif (name.find(arg).text[:2] == "TF"):
             if (name.find(arg).text[3:] in Temporary_frame):
-                if (Temporary_frame[name.find(arg).text[3:]][1] != "int" or
-                    Temporary_frame[name.find(arg).text[3:]][1] != "string" or
-                    Temporary_frame[name.find(arg).text[3:]][1] != "int" or
-                    Temporary_frame[name.find(arg).text[3:]][1] != "int"):
+                if (Temporary_frame[name.find(arg).text[3:]][1] != "int" and
+                    Temporary_frame[name.find(arg).text[3:]][1] != "string" and
+                    Temporary_frame[name.find(arg).text[3:]][1] != "int" and
+                    Temporary_frame[name.find(arg).text[3:]][1] != "nil"):
+                    print(Temporary_frame[name.find(arg).text[3:]][1] != "string")
                     exit(55)
             else:
                 exit(55)
@@ -450,8 +452,8 @@ def sematic_check(root, instruction_number):
         type=""
         if (any(three_operand)):
             if(name.get('opcode').upper() == "ADD"):
-                first_value=find_value('arg2', name)
-                second_value=find_value('arg3', name)
+                first_value=int(find_value('arg2', name))
+                second_value=int(find_value('arg3', name))
                 result=first_value+second_value
                 type="int"
             elif(name.get('opcode').upper() == "SUB"):
@@ -579,6 +581,63 @@ def sematic_check(root, instruction_number):
                 values=get_value_comparasion(name)
                 if(values[0][1] != "string" or values[1][1] != "string"):
                     exit(55)
+                result=values[0][0]+values[1][0]
+                type="string"
+            elif(name.get('opcode').upper() == "GETCHAR"):
+                values=get_value_comparasion(name)
+                if(values[0][1] != "string"):
+                    exit(55)
+                try:
+                   position= int(values[1][0])
+                except:
+                    exit(55)
+                string=values[0][0]
+                try:
+                    result=string[position]
+                    type="string"
+                except:
+                    exit(58)
+            elif(name.get('opcode').upper() == "SETCHAR"):
+                values=get_value_comparasion(name)
+                if(values[1][1] != "string"):
+                    exit(55)
+                if(values[1][0] == ""):
+                    exit(58)
+                try:
+                   position= int(values[0][0])
+                except:
+                    exit(55)
+                if (name.find('arg1').text[:2] == "GF"):
+                    if (name.find('arg1').text[3:] in Global_frame):
+                        pass
+                    else:
+                        exit(55)
+                    string=Global_frame[name.find('arg1').text[3:]]
+                elif (name.find('arg1').text[:2] == "LF"):
+                    if (len(FrameStack) == 0):
+                        exit(55)
+                    if (name.find('arg1').text[3:] in FrameStack[0]):
+                        pass
+                    else:
+                        exit(55)
+                    string=FrameStack[0][name.find('arg1').text[3:]]
+                elif (name.find('arg1').text[:2] == "TF"):
+                    if (name.find('arg1').text[3:] in Temporary_frame):
+                        pass
+                    else:
+                        exit(55)
+                    string=Temporary_frame[name.find('arg1').text[3:]]
+                else:
+                    exit(55)
+                string=string[0]
+                string=list(string)
+                try:
+                    print()
+                    string[position]=values[1][0]
+                except:
+                    exit(58)
+                result=''.join(string)
+                type="string"
 
             else:
                 exit(54)
@@ -605,7 +664,28 @@ def sematic_check(root, instruction_number):
                     Temporary_frame[name.find('arg1').text[3:]] = (result, type)
                 else:
                     exit(55)
+        if(name.get('opcode').upper() == "JUMPIFEQ" or name.get('opcode').upper() == "JUMPIFNEQ"):
+            values=get_value_comparasion(name)
+            if(values[0][1] == values[1][1] or (values[0][1] == "nul" or values[1][1] == "nul")):
+                if(values[0][0] == values[1][0] and name.get('opcode').upper() == "JUMPIFEQ"):
+                    try:
+                        instruction_number = Labels[name.find('arg1').text]
+                    except:
+                        exit(55)
+                    instruction_number += 1
+                    sematic_check(root, instruction_number)
+                    break
+                if(values[0][0] != values[1][0] and name.get('opcode').upper() == "JUMPIFNEQ"):
 
+                    try:
+                        instruction_number = Labels[name.find('arg1').text]
+                    except:
+                        exit(55)
+                    instruction_number += 1
+                    sematic_check(root, instruction_number)
+                    break
+            else:
+                exit(53)
 
 
 
