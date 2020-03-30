@@ -575,6 +575,10 @@ def sematic_check(root, instruction_number):
                     type="int"
                 except:
                     exit(55)
+            elif(name.get('opcode').upper() == "CONCAT"):
+                values=get_value_comparasion(name)
+                if(values[0][1] != "string" or values[1][1] != "string"):
+                    exit(55)
 
             else:
                 exit(54)
