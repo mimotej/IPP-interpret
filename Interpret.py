@@ -546,8 +546,65 @@ def sematic_check(root, instruction_number):
                 Temporary_frame[name.find('arg1').text[3:]]=(string_len, "int")
             else:
                 exit(55)
+        if(name.get('opcode').upper() == "TYPE"):
+            if (name.find('arg2').attrib['type'] == "var"):
+                if (name.find('arg2').text[:2] == "GF"):
+                    if (name.find('arg2').text[3:] in Global_frame):
+                        pass
+                    else:
+                        exit(55)
+                    if (Global_frame[name.find('arg2').text[3:]][1] != "string" or
+                            Global_frame[name.find('arg2').text[3:]][1]):
+                        exit(58)
+                    type = Global_frame[name.find('arg1').text[3:]][1]
+                elif (name.find('arg2').text[:2] == "LF"):
+                    if (len(FrameStack) == 0):
+                        exit(55)
+                    if (name.find('arg2').text[3:] in FrameStack[0]):
+                        pass
+                    else:
+                        exit(55)
+                    if (FrameStack[0][name.find('arg2').text[3:]][1] != "string" or
+                            FrameStack[0][name.find('arg2').text[3:]][1] != "nil"):
+                        exit(58)
+                    type = FrameStack[0][name.find('arg1').text[3:]][1]
+                elif (name.find('arg2').text[:2] == "TF"):
+                    if (name.find('arg2').text[3:] in Temporary_frame):
+                        pass
+                    else:
+                        exit(55)
+                    if (Temporary_frame[name.find('arg2').text[3:]][1] != "string" or
+                            Temporary_frame[name.find('arg2').text[3:]][1] != "nil"):
+                        exit(58)
+                    type = Temporary_frame[name.find('arg1').text[3:]][1]
+                else:
+                    exit(55)
+            else:
+                type=name.find('arg2').attrib['type']
+            if (name.find('arg1').text[:2] == "GF"):
+                if (name.find('arg1').text[3:] in Global_frame):
+                    pass
+                else:
+                    exit(55)
+                Global_frame[name.find('arg1').text[3:]] = (type, "type")
+            elif (name.find('arg1').text[:2] == "LF"):
+                if (len(FrameStack) == 0):
+                    exit(55)
+                if (name.find('arg1').text[3:] in FrameStack[0]):
+                    pass
+                else:
+                    exit(55)
+                FrameStack[0][name.find('arg1').text[3:]] = (type, "type")
+            elif (name.find('arg1').text[:2] == "TF"):
+                if (name.find('arg1').text[3:] in Temporary_frame):
+                    pass
+                else:
+                    exit(55)
+                Temporary_frame[name.find('arg1').text[3:]] = (type, "type")
+            else:
+                exit(55)
         if(name.get('opcode').upper() == "READ"):
-            input_value = input()
+            input_value= input()
             if(name.find('arg2').text== "string"):
                 input_value=(input_value, "string")
             elif(name.find('arg2').text== "int"):
@@ -568,7 +625,7 @@ def sematic_check(root, instruction_number):
                     pass
                 else:
                     exit(55)
-                Global_frame[name.find('arg1').text[3:]][0]=input_value
+                Global_frame[name.find('arg1').text[3:]]=input_value
             elif (name.find('arg1').text[:2] == "LF"):
                 if (len(FrameStack) == 0):
                     exit(55)
@@ -576,13 +633,13 @@ def sematic_check(root, instruction_number):
                     pass
                 else:
                     exit(55)
-                FrameStack[0][name.find('arg1').text[3:]][0]=input_value
+                FrameStack[0][name.find('arg1').text[3:]]=input_value
             elif (name.find('arg1').text[:2] == "TF"):
                 if (name.find('arg1').text[3:] in Temporary_frame):
                     pass
                 else:
                     exit(55)
-                Temporary_frame[name.find('arg1').text[3:]][0]=input_value
+                Temporary_frame[name.find('arg1').text[3:]]=input_value
             else:
                 exit(55)
         if(name.get('opcode').upper() == "MOVE"):
@@ -885,13 +942,13 @@ def sematic_check(root, instruction_number):
 
 args=parse_arguments()
 source=args.source
-input=args.source
+input_args=args.source
 if(args.input == None and args.source == None):
     exit(11)
 elif(args.input == None):
-   input=""
+   input_args=""
    for line in sys.stdin:
-       input+=line
+       input_args+=line
 elif(args.source == None):
     source=""
     for line in sys.stdin:
