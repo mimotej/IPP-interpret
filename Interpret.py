@@ -263,6 +263,38 @@ def get_value_comparasion(name):
      arg='arg3'
      return_value.append(value)
     return return_value
+
+def get_variable_value(name):
+    if (name.find('arg1').text[:2] == "GF"):
+        if (name.find('arg1').text[3:] in Global_frame):
+            pass
+        else:
+            exit(55)
+        try:
+            return_value = Global_frame[name.find('arg1').text[3:]][0]
+        except:
+            exit(56)
+    elif (name.find('arg1').text[:2] == "LF"):
+        if (len(FrameStack) == 0):
+            exit(55)
+        if (name.find('arg1').text[3:] in FrameStack[0]):
+            pass
+        else:
+            exit(55)
+        try:
+            return_value=FrameStack[0][name.find('arg1').text[3:]][0]
+        except:
+            exit(56)
+    elif (name.find('arg1').text[:2] == "TF"):
+        if (name.find('arg1').text[3:] in Temporary_frame):
+            pass
+        else:
+            exit(55)
+        try:
+            return_value= Temporary_frame[name.find('arg1').text[3:]][0]
+        except:
+            exit(57)
+    return return_value
 def sematic_check(root, instruction_number):
     global Temporary_frame
     global FrameStack
@@ -420,7 +452,7 @@ def sematic_check(root, instruction_number):
                         pass
                     else:
                         exit(55)
-                    print(Global_frame[name.find('arg1').text[3:]][0][0], end='')
+                    print(Global_frame[name.find('arg1').text[3:]][0], end='')
                 elif (name.find('arg1').text[:2] == "LF"):
                     if (len(FrameStack) == 0):
                         exit(55)
@@ -428,7 +460,7 @@ def sematic_check(root, instruction_number):
                         pass
                     else:
                         exit(55)
-                    print(FrameStack[0][name.find('arg1').text[3:]][0][0], end='')
+                    print(FrameStack[0][name.find('arg1').text[3:]][0], end='')
                 elif (name.find('arg1').text[:2] == "TF"):
                     if (name.find('arg1').text[3:] in Temporary_frame):
                         pass
@@ -494,7 +526,7 @@ def sematic_check(root, instruction_number):
                         pass
                     else:
                         exit(55)
-                    if(Global_frame[name.find('arg2').text[3:]][1] != "string" or Global_frame[name.find('arg2').text[3:]][1]):
+                    if(Global_frame[name.find('arg2').text[3:]][1] != "string" and Global_frame[name.find('arg2').text[3:]][1]):
                         exit(58)
                     string_len=Global_frame[name.find('arg1').text[3:]][0]
                 elif (name.find('arg2').text[:2] == "LF"):
@@ -504,7 +536,7 @@ def sematic_check(root, instruction_number):
                         pass
                     else:
                         exit(55)
-                    if(FrameStack[0][name.find('arg2').text[3:]][1] != "string" or FrameStack[0][name.find('arg2').text[3:]][1] != "nil"):
+                    if(FrameStack[0][name.find('arg2').text[3:]][1] != "string" and FrameStack[0][name.find('arg2').text[3:]][1] != "nil"):
                         exit(58)
                     string_len=FrameStack[0][name.find('arg1').text[3:]][0]
                 elif (name.find('arg2').text[:2] == "TF"):
@@ -512,7 +544,7 @@ def sematic_check(root, instruction_number):
                         pass
                     else:
                         exit(55)
-                    if(Temporary_frame[name.find('arg2').text[3:]][1] != "string" or Temporary_frame[name.find('arg2').text[3:]][1] != "nil"):
+                    if(Temporary_frame[name.find('arg2').text[3:]][1] != "string" and Temporary_frame[name.find('arg2').text[3:]][1] != "nil"):
                         exit(58)
                     string_len=Temporary_frame[name.find('arg1').text[3:]][0]
                 else:
