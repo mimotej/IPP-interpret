@@ -264,25 +264,56 @@ def get_value_comparasion(name):
      return_value.append(value)
     return return_value
 
-def get_variable_value(name):
-    if (name.find('arg1').text[:2] == "GF"):
-        if (name.find('arg1').text[3:] in Global_frame):
+def get_variable_value(name, arg):
+    if (name.find(arg).text[:2] == "GF"):
+        if (name.find(arg).text[3:] in Global_frame):
             pass
         else:
             exit(55)
         try:
-            return_value = Global_frame[name.find('arg1').text[3:]][0]
+            return_value = Global_frame[name.find(arg).text[3:]]
         except:
             exit(56)
-    elif (name.find('arg1').text[:2] == "LF"):
+    elif (name.find(arg).text[:2] == "LF"):
         if (len(FrameStack) == 0):
             exit(55)
-        if (name.find('arg1').text[3:] in FrameStack[0]):
+        if (name.find(arg).text[3:] in FrameStack[0]):
             pass
         else:
             exit(55)
         try:
-            return_value=FrameStack[0][name.find('arg1').text[3:]][0]
+            return_value=FrameStack[0][name.find('arg1').text[3:]]
+        except:
+            exit(56)
+    elif (name.find(arg).text[:2] == "TF"):
+        if (name.find(arg).text[3:] in Temporary_frame):
+            pass
+        else:
+            exit(55)
+        try:
+            return_value= Temporary_frame[name.find(arg).text[3:]]
+        except:
+            exit(57)
+    return return_value
+def save_variable_value(name, arg, value):
+    if (name.find(arg).text[:2] == "GF"):
+        if (name.find(arg).text[3:] in Global_frame):
+            pass
+        else:
+            exit(55)
+        try:
+            Global_frame[name.find(arg).text[3:]] = value
+        except:
+            exit(56)
+    elif (name.find(arg).text[:2] == "LF"):
+        if (len(FrameStack) == 0):
+            exit(55)
+        if (name.find(arg).text[3:] in FrameStack[0]):
+            pass
+        else:
+            exit(55)
+        try:
+            FrameStack[0][name.find(arg).text[3:]] = value
         except:
             exit(56)
     elif (name.find('arg1').text[:2] == "TF"):
@@ -291,10 +322,11 @@ def get_variable_value(name):
         else:
             exit(55)
         try:
-            return_value= Temporary_frame[name.find('arg1').text[3:]][0]
+            Temporary_frame[name.find(arg).text[3:]] = value
         except:
-            exit(57)
-    return return_value
+            exit(56)
+    else:
+        exit(55)
 def sematic_check(root, instruction_number):
     global Temporary_frame
     global FrameStack
@@ -383,65 +415,16 @@ def sematic_check(root, instruction_number):
             
         if (name.get('opcode').upper() == "PUSHS"):
             if(name.find('arg1').attrib['type'] == "var"):
-                if (name.find('arg1').text[:2] == "GF"):
-                    if (name.find('arg1').text[3:] in Global_frame):
-                        pass
-                    else:
-                        exit(55)
-                    push_value=Global_frame[name.find('arg1').text[3:]]
-                elif (name.find('arg1').text[:2] == "LF"):
-                    if (len(FrameStack) == 0):
-                        exit(55)
-                    if (name.find('arg1').text[3:] in FrameStack[0]):
-                        pass
-                    else:
-                        exit(55)
-                    push_value=FrameStack[0][name.find('arg1').text[3:]]
-                elif (name.find('arg1').text[:2] == "TF"):
-                    if (name.find('arg1').text[3:] in Temporary_frame):
-                        pass
-                    else:
-                        exit(55)
-                    push_value=Temporary_frame[name.find('arg1').text[3:]]
-                else:
-                    exit(55)
+                push_value=get_variable_value(name, 'arg1')
+                print(push_value)
             else:
                 push_value=name.find('arg1').text
                 push_value=(push_value, name.find('arg1').attrib['type'])
             Stack.append(push_value)
         if (name.get('opcode').upper() == "POPS"):
             if (name.find('arg1').attrib['type'] == "var"):
-                if (name.find('arg1').text[:2] == "GF"):
-                    if (name.find('arg1').text[3:] in Global_frame):
-                        pass
-                    else:
-                         exit(55)
-                    try:
-                        Global_frame[name.find('arg1').text[3:]]=Stack.pop()
-                    except:
-                        exit(56)
-                elif (name.find('arg1').text[:2] == "LF"):
-                     if (len(FrameStack) == 0):
-                         exit(55)
-                     if (name.find('arg1').text[3:] in FrameStack[0]):
-                            pass
-                     else:
-                        exit(55)
-                     try:
-                         FrameStack[0][name.find('arg1').text[3:]]=Stack.pop()
-                     except:
-                         exit(56)
-                elif (name.find('arg1').text[:2] == "TF"):
-                    if (name.find('arg1').text[3:] in Temporary_frame):
-                         pass
-                    else:
-                        exit(55)
-                    try:
-                        Temporary_frame[name.find('arg1').text[3:]]=Stack.pop()
-                    except:
-                        exit(56)
-                else:
-                    exit(55)
+                save_value = Stack.pop()
+                save_variable_value(name, "arg1", save_value)
             else:
                 exit(55)
 
@@ -477,38 +460,9 @@ def sematic_check(root, instruction_number):
                 print(name.find('arg1').text, end='')
             elif(name.find('arg1').attrib['type']=="float"):
                 print(name.find('arg1').text, end='')
-              ### třeba dodělat
         if (name.get('opcode').upper() == "EXIT"):
             if(name.find('arg1').attrib['type'] == "var"):
-                if (name.find('arg1').text[:2] == "GF"):
-                    if (name.find('arg1').text[3:] in Global_frame):
-                        pass
-                    else:
-                         exit(55)
-                    try:
-                        exit_code=int(Global_frame[name.find('arg1').text[3:]][0])
-                    except:
-                        exit(56)
-                elif (name.find('arg1').text[:2] == "LF"):
-                     if (len(FrameStack) == 0):
-                         exit(55)
-                     if (name.find('arg1').text[3:] in FrameStack[0]):
-                            pass
-                     else:
-                        exit(55)
-                     try:
-                         int(FrameStack[0][name.find('arg1').text[3:]][0])
-                     except:
-                         exit(56)
-                elif (name.find('arg1').text[:2] == "TF"):
-                    if (name.find('arg1').text[3:] in Temporary_frame):
-                         pass
-                    else:
-                        exit(55)
-                    try:
-                        exit_code=int(Temporary_frame[name.find('arg1').text[3:]][0])
-                    except:
-                        exit(57)
+                exit_code=get_variable_value(name, "arg1")
             else:
                 try:
                     exit_code=int(name.find('arg1').text)
@@ -521,34 +475,10 @@ def sematic_check(root, instruction_number):
                 exit(57)
         if(name.get('opcode').upper() == "STRLEN"):
             if (name.find('arg2').attrib['type'] == "var"):
-                if (name.find('arg2').text[:2] == "GF"):
-                    if (name.find('arg2').text[3:] in Global_frame):
-                        pass
-                    else:
-                        exit(55)
-                    if(Global_frame[name.find('arg2').text[3:]][1] != "string" and Global_frame[name.find('arg2').text[3:]][1]):
-                        exit(58)
-                    string_len=Global_frame[name.find('arg1').text[3:]][0]
-                elif (name.find('arg2').text[:2] == "LF"):
-                    if (len(FrameStack) == 0):
-                        exit(55)
-                    if (name.find('arg2').text[3:] in FrameStack[0]):
-                        pass
-                    else:
-                        exit(55)
-                    if(FrameStack[0][name.find('arg2').text[3:]][1] != "string" and FrameStack[0][name.find('arg2').text[3:]][1] != "nil"):
-                        exit(58)
-                    string_len=FrameStack[0][name.find('arg1').text[3:]][0]
-                elif (name.find('arg2').text[:2] == "TF"):
-                    if (name.find('arg2').text[3:] in Temporary_frame):
-                        pass
-                    else:
-                        exit(55)
-                    if(Temporary_frame[name.find('arg2').text[3:]][1] != "string" and Temporary_frame[name.find('arg2').text[3:]][1] != "nil"):
-                        exit(58)
-                    string_len=Temporary_frame[name.find('arg1').text[3:]][0]
-                else:
-                    exit(55)
+                string_len=get_variable_value(name, 'arg2')
+                if (string_len[1] != "string" and string_len[1] != "nil"):
+                    exit(58)
+                string_len=string_len[0]
             elif (name.find('arg2').attrib['type'] == "string"):
                  string_len=name.find('arg2').text
             elif (name.find('arg2').attrib['type'] == "nil"):
@@ -556,85 +486,15 @@ def sematic_check(root, instruction_number):
             else:
                 exit(58)
             string_len=len(string_len)
-            if (name.find('arg1').text[:2] == "GF"):
-                if (name.find('arg1').text[3:] in Global_frame):
-                    pass
-                else:
-                    exit(55)
-                Global_frame[name.find('arg1').text[3:]]=(string_len, "int")
-            elif (name.find('arg1').text[:2] == "LF"):
-                if (len(FrameStack) == 0):
-                    exit(55)
-                if (name.find('arg1').text[3:] in FrameStack[0]):
-                    pass
-                else:
-                    exit(55)
-                FrameStack[0][name.find('arg1').text[3:]]=(string_len, "int")
-            elif (name.find('arg1').text[:2] == "TF"):
-                if (name.find('arg1').text[3:] in Temporary_frame):
-                    pass
-                else:
-                    exit(55)
-                Temporary_frame[name.find('arg1').text[3:]]=(string_len, "int")
-            else:
-                exit(55)
+            string_len=(string_len, "int")
+            save_variable_value(name, "arg1", string_len)
         if(name.get('opcode').upper() == "TYPE"):
             if (name.find('arg2').attrib['type'] == "var"):
-                if (name.find('arg2').text[:2] == "GF"):
-                    if (name.find('arg2').text[3:] in Global_frame):
-                        pass
-                    else:
-                        exit(55)
-                    if (Global_frame[name.find('arg2').text[3:]][1] != "string" or
-                            Global_frame[name.find('arg2').text[3:]][1]):
-                        exit(58)
-                    type = Global_frame[name.find('arg1').text[3:]][1]
-                elif (name.find('arg2').text[:2] == "LF"):
-                    if (len(FrameStack) == 0):
-                        exit(55)
-                    if (name.find('arg2').text[3:] in FrameStack[0]):
-                        pass
-                    else:
-                        exit(55)
-                    if (FrameStack[0][name.find('arg2').text[3:]][1] != "string" or
-                            FrameStack[0][name.find('arg2').text[3:]][1] != "nil"):
-                        exit(58)
-                    type = FrameStack[0][name.find('arg1').text[3:]][1]
-                elif (name.find('arg2').text[:2] == "TF"):
-                    if (name.find('arg2').text[3:] in Temporary_frame):
-                        pass
-                    else:
-                        exit(55)
-                    if (Temporary_frame[name.find('arg2').text[3:]][1] != "string" or
-                            Temporary_frame[name.find('arg2').text[3:]][1] != "nil"):
-                        exit(58)
-                    type = Temporary_frame[name.find('arg1').text[3:]][1]
-                else:
-                    exit(55)
+                type=get_variable_value(name, 'arg2')
+                type=type[1]
             else:
                 type=name.find('arg2').attrib['type']
-            if (name.find('arg1').text[:2] == "GF"):
-                if (name.find('arg1').text[3:] in Global_frame):
-                    pass
-                else:
-                    exit(55)
-                Global_frame[name.find('arg1').text[3:]] = (type, "type")
-            elif (name.find('arg1').text[:2] == "LF"):
-                if (len(FrameStack) == 0):
-                    exit(55)
-                if (name.find('arg1').text[3:] in FrameStack[0]):
-                    pass
-                else:
-                    exit(55)
-                FrameStack[0][name.find('arg1').text[3:]] = (type, "type")
-            elif (name.find('arg1').text[:2] == "TF"):
-                if (name.find('arg1').text[3:] in Temporary_frame):
-                    pass
-                else:
-                    exit(55)
-                Temporary_frame[name.find('arg1').text[3:]] = (type, "type")
-            else:
-                exit(55)
+            save_variable_value(name, "arg1", (type, "type"))
         if(name.get('opcode').upper() == "READ"):
             input_value= input()
             if(name.find('arg2').text== "string"):
@@ -652,86 +512,28 @@ def sematic_check(root, instruction_number):
             else:
                 input_value="nil"
                 input_value=(input_value, "nil")
-            if (name.find('arg1').text[:2] == "GF"):
-                if (name.find('arg1').text[3:] in Global_frame):
-                    pass
-                else:
-                    exit(55)
-                Global_frame[name.find('arg1').text[3:]]=input_value
-            elif (name.find('arg1').text[:2] == "LF"):
-                if (len(FrameStack) == 0):
-                    exit(55)
-                if (name.find('arg1').text[3:] in FrameStack[0]):
-                    pass
-                else:
-                    exit(55)
-                FrameStack[0][name.find('arg1').text[3:]]=input_value
-            elif (name.find('arg1').text[:2] == "TF"):
-                if (name.find('arg1').text[3:] in Temporary_frame):
-                    pass
-                else:
-                    exit(55)
-                Temporary_frame[name.find('arg1').text[3:]]=input_value
-            else:
-                exit(55)
+            save_variable_value(name, "arg1", input_value)
         if(name.get('opcode').upper() == "MOVE"):
            if(name.find('arg2').attrib['type'] == "var"):
-               if (name.find('arg2').text[:2] == "GF"):
-                   if (name.find('arg2').text[3:] in Global_frame):
-                       pass
-                   else:
-                       exit(55)
-                   moved=Global_frame[name.find('arg2').text[3:]][0]
-               elif (name.find('arg2').text[:2] == "LF"):
-                   if (len(FrameStack) == 0):
-                       exit(55)
-                   if (name.find('arg2').text[3:] in FrameStack[0]):
-                       pass
-                   else:
-                       exit(55)
-                   moved=FrameStack[0][name.find('arg2').text[3:]][0]
-               elif (name.find('arg2').text[:2] == "TF"):
-                   if (name.find('arg2').text[3:] in Temporary_frame):
-                       pass
-                   else:
-                       exit(55)
-                   moved=Temporary_frame[name.find('arg2').text[3:]][0]
-               else:
-                   exit(55)
+               moved=get_variable_value(name, "arg2")
+               type=moved[1]
+               moved=moved[0]
            if (name.find('arg2').attrib['type'] == "string"):
                moved=name.find('arg2').text
+               type=name.find('arg2').attrib['type']
            elif (name.find('arg2').attrib['type'] == "int"):
                moved=name.find('arg2').text
+               type=name.find('arg2').attrib['type']
            elif (name.find('arg2').attrib['type'] == "nil"):
                moved=name.find('arg2').text
+               type=name.find('arg2').attrib['type']
            elif (name.find('arg2').attrib['type'] == "float"):
                moved=name.find('arg2').text
+               type=name.find('arg2').attrib['type']
            if(name.find('arg1').attrib['type'] == "var"):
-               if (name.find('arg1').text[:2] == "GF"):
-                   if (name.find('arg1').text[3:] in Global_frame):
-                       pass
-                   else:
-                       exit(55)
-                   Global_frame[name.find('arg1').text[3:]]=(moved, name.find('arg2').attrib['type'])
-               elif (name.find('arg1').text[:2] == "LF"):
-                   if (len(FrameStack) == 0):
-                       exit(55)
-                   if (name.find('arg1').text[3:] in FrameStack[0]):
-                       pass
-                   else:
-                       exit(55)
-                   FrameStack[0][name.find('arg1').text[3:]]=(moved, name.find('arg2').attrib['type'])
-               elif (name.find('arg1').text[:2] == "TF"):
-                   if (name.find('arg1').text[3:] in Temporary_frame):
-                       pass
-                   else:
-                       exit(55)
-                   Temporary_frame[name.find('arg1').text[3:]]=(moved,name.find('arg2').attrib['type'])
-               else:
-                   exit(55)
+               save_variable_value(name, "arg1", (moved, type))
            else:
                exit(55)
-        type=""
         if (any(three_operand)):
             if(name.get('opcode').upper() == "ADD"):
                 first_value=int(find_value('arg2', name))
@@ -924,28 +726,7 @@ def sematic_check(root, instruction_number):
             else:
                 exit(54)
             if (name.find('arg1').attrib['type'] == "var"):
-                if (name.find('arg1').text[:2] == "GF"):
-                    if (name.find('arg1').text[3:] in Global_frame):
-                        pass
-                    else:
-                        exit(55)
-                    Global_frame[name.find('arg1').text[3:]] = (result, type)
-                elif (name.find('arg1').text[:2] == "LF"):
-                    if (len(FrameStack) == 0):
-                        exit(55)
-                    if (name.find('arg1').text[3:] in FrameStack[0]):
-                        pass
-                    else:
-                        exit(55)
-                    FrameStack[0][name.find('arg1').text[3:]] = (result, type)
-                elif (name.find('arg1').text[:2] == "TF"):
-                    if (name.find('arg1').text[3:] in Temporary_frame):
-                        pass
-                    else:
-                        exit(55)
-                    Temporary_frame[name.find('arg1').text[3:]] = (result, type)
-                else:
-                    exit(55)
+                save_variable_value(name, "arg1", (result, type))
         if(name.get('opcode').upper() == "JUMPIFEQ" or name.get('opcode').upper() == "JUMPIFNEQ"):
             values=get_value_comparasion(name)
             if(values[0][1] == values[1][1] or (values[0][1] == "nul" or values[1][1] == "nul")):
