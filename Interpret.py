@@ -10,6 +10,20 @@ Global_frame={}
 Labels={}
 Stack_call=[]
 Stack=[]
+def escape_sequence(string):
+##chr(int(32))
+    string
+    i=0
+    for c in string:
+        if(c == '\\'):
+            if(string[i+1]=="0"):
+                string=string[:i]+chr(int(string[i+2 : i+4]))+string[i+4:]
+                i-=3
+            else:
+                string=string[:i]+chr(int(string[i+1 : i+4]))+string[i+4:]
+                i-=3
+        i+=1
+    return string
 def parse_arguments():
     argparser=argparse.ArgumentParser(add_help=False)
     argparser.add_argument('--help', action="store_true")
@@ -18,7 +32,7 @@ def parse_arguments():
     args=argparser.parse_args()
     if(len(sys.argv[1:])>2):
         print("Spatny pocet argumentu!\n")
-        exit(11)
+        sys.exit(11)
     return args
 def check_constant(name, arg):
     type=name.find(arg).attrib['type']
@@ -26,7 +40,6 @@ def check_constant(name, arg):
         if(name.find(arg).text !="true" and name.find(arg).text !="false"):
             exit(11)
     elif(type == "int"):
-        print(name.find(arg).text)
         if (name.find(arg).text == None):
             return
         try:
@@ -36,10 +49,6 @@ def check_constant(name, arg):
     elif(type=="var"):
         if(re.search('^[a-zA-Z\*_\-\$&\%!\?]', name.find(arg).text[3]) == None):
            exit(11)
-    elif(type=="string"):
-       if(name.find(arg).text.find('\\') != -1):
-            if (re.search('[\\\\][0-9][0-9][0-9]', name.find(arg).text) != None):
-                exit(11)
     elif(type == "label"):
         if(re.search('^[a-zA-Z\*_\-\$&\%!\?]', name.find(arg).text[3]) == None):
             exit(11)
@@ -83,38 +92,47 @@ def parse_instruction(name):
     three_operand_label=[name.get('opcode').upper() == ("JUMPIFEQ"),
                          name.get('opcode').upper() == ("JUMPIFNEQ"),]
     if(len(list(name)) == 1 or len(list(name)) == 2 or len(list(name)) == 3):
-        constants_arg1=[name.find('arg1').attrib['type']=="string",
+        try:
+            constants_arg1=[name.find('arg1').attrib['type']=="string",
                     name.find('arg1').attrib['type']=="bool",
                     name.find('arg1').attrib['type']=="int",
                     name.find('arg1').attrib['type']=="nil",
                     name.find('arg1').attrib['type'] == "float",]
+        except:
+            sys.exit(32)
     if(len(list(name)) == 2 or len(list(name)) == 3):
-        constants_arg2=[name.find('arg2').attrib['type']=="string",
+        try:
+            constants_arg2=[name.find('arg2').attrib['type']=="string",
                     name.find('arg2').attrib['type']=="bool",
                     name.find('arg2').attrib['type']=="int",
                     name.find('arg2').attrib['type']=="nil",
                     name.find('arg1').attrib['type'] == "float",]
+        except:
+            sys.exit(32)
     if(len(list(name)) == 3):
-        constants_arg3=[name.find('arg3').attrib['type']=="string",
+        try:
+            constants_arg3=[name.find('arg3').attrib['type']=="string",
                     name.find('arg3').attrib['type']=="bool",
                     name.find('arg3').attrib['type']=="int",
                     name.find('arg3').attrib['type']=="nil",
                     name.find('arg1').attrib['type'] == "float",]
+        except:
+            sys.exit(32)
     if(any(no_operands)):
         if(len(list(name)) != 0):
-            exit(55)
+            sys.exit(32)
     elif(any(one_operand_var)):
         if(len(list(name)) == 1):
             if(name.find('arg1').attrib['type'] =="var"):
               check_constant(name, 'arg1')
               return
-        print("error")
+        sys.exit(32)
     elif(any(one_operand_symb)):
         if(len(list(name)) == 1):
             if(name.find('arg1').attrib['type'] =="var" or any(constants_arg1)):
               check_constant(name, 'arg1')
               return
-        print("error")
+        sys.exit(32)
     elif(any(one_operand_label)):
         if(len(list(name)) == 1):
             if(name.find('arg1').attrib['type'] =="label"):
@@ -122,10 +140,10 @@ def parse_instruction(name):
               ### Zaznamenání labelu do slovníku
               if name.get('opcode').upper() == ("LABEL"):
                   if name.find('arg1').text in Labels:
-                      exit(11)
+                      sys.exit(52)
                   Labels[name.find('arg1').text]=int(name.get('order'))
               return
-        print("error")
+        sys.exit(32)
     elif(any(two_operand_read)):
         if(len(list(name)) == 2):
             if(name.find('arg1').attrib['type'] == "var"):
@@ -133,6 +151,7 @@ def parse_instruction(name):
                 if(any(constants_arg2)):
                     check_constant(name, 'arg2')
                     return
+        sys.exit(32)
     elif (any(two_operand)):
         if (len(list(name)) == 2):
             if (name.find('arg1').attrib['type'] == "var"):
@@ -140,7 +159,7 @@ def parse_instruction(name):
                 if (any(constants_arg2) or name.find('arg2').attrib['type'] == "var"):
                     check_constant(name, 'arg2')
                     return
-        exit(11)
+        sys.exit(32)
     elif (any(three_operand)):
        if (len(list(name)) == 3):
            if(name.find('arg1').attrib['type'] == "var"):
@@ -150,20 +169,20 @@ def parse_instruction(name):
                    if (any(constants_arg3) or name.find('arg3').attrib['type'] == "var"):
                        check_constant(name, 'arg3')
                        return
-       exit(11)
+       sys.exit(32)
     elif (any(three_operand_label)):
         if(len(list(name)) == 3):
             if(name.find('arg1').attrib['type'] == "label"):
                 if (re.search('^[a-zA-Z\*_\-\$&\%!\?]', name.find('arg1').text[3]) == None):
-                    exit(11)
+                    sys.exit(52)
                 if (any(constants_arg2) or name.find('arg2').attrib['type'] == "var"):
                     check_constant(name, 'arg2')
                 if (any(constants_arg3) or name.find('arg3').attrib['type'] == "var"):
                     check_constant(name, 'arg3')
                     return
+        sys.exit(32)
     else:
-        print("Error unknown instruction\n")
-        exit(11)
+        sys.exit(32)
 #### pomocná funkce na zpracování hodnot pro aritmetické fce
 def find_value(arg, name):
     if (name.find(arg).attrib['type'] == "var"):
@@ -172,31 +191,31 @@ def find_value(arg, name):
                 if (Global_frame[name.find(arg).text[3:]][1] != "int"):
                     exit(55)
             else:
-                exit(55)
+                sys.exit(54)
             value = Global_frame[name.find('arg2').text[3:]][0]
         elif (name.find(arg).text[:2] == "LF"):
             if (len(FrameStack) == 0):
-                exit(55)
+                sys.exit(55)
             if (name.find(arg).text[3:] in FrameStack[0]):
                 if (FrameStack[0][name.find(arg).text[3:]][1] != "int"):
-                    exit(55)
+                    sys.exit(55)
             else:
-                exit(55)
+                sys.exit(54)
             value = FrameStack[0][name.find('arg2').text[3:]][0]
         elif (name.find(arg).text[:2] == "TF"):
             if (name.find(arg).text[3:] in Temporary_frame):
                 if (Temporary_frame[name.find(arg).text[3:]][1] != "int"):
-                    exit(55)
+                    sys.exit(55)
             else:
-                exit(55)
+                sys.exit(54)
             value = Temporary_frame[name.find(arg).text[3:]][0]
     elif(name.find(arg).attrib['type'] == "int"):
         try:
             value=int(name.find(arg).text)
         except:
-            exit(55)
+            sys.exit(57)
     else:
-        exit(55)
+        sys.exit(53)
     return value
 
 def get_value_comparasion(name):
@@ -213,9 +232,9 @@ def get_value_comparasion(name):
                     Global_frame[name.find(arg).text[3:]][1] != "bool" and
                     Global_frame[name.find(arg).text[3:]][1] != "nil"):
 
-                    exit(55)
+                    sys.exit(53)
             else:
-                exit(55)
+                sys.exit(54)
             value.append(Global_frame[name.find(arg).text[3:]][0])
             value.append(Global_frame[name.find(arg).text[3:]][1])
         elif (name.find(arg).text[:2] == "LF"):
@@ -226,9 +245,9 @@ def get_value_comparasion(name):
                     FrameStack[0][name.find(arg).text[3:]][1] != "string" and
                     FrameStack[0][name.find(arg).text[3:]][1] != "bool" and
                     FrameStack[0][name.find(arg).text[3:]][1] != "nil"):
-                    exit(55)
+                    sys.exit(53)
             else:
-                exit(55)
+                sys.exit(54)
             value.append(FrameStack[0][name.find(arg).text[3:]][0])
             value.append(FrameStack[0][name.find(arg).text[3:]][1])
         elif (name.find(arg).text[:2] == "TF"):
@@ -237,18 +256,21 @@ def get_value_comparasion(name):
                     Temporary_frame[name.find(arg).text[3:]][1] != "string" and
                     Temporary_frame[name.find(arg).text[3:]][1] != "int" and
                     Temporary_frame[name.find(arg).text[3:]][1] != "nil"):
-                    print(Temporary_frame[name.find(arg).text[3:]][1] != "string")
-                    exit(55)
+                    sys.exit(53)
             else:
-                exit(55)
+                sys.exit(54)
             value.append(Temporary_frame[name.find(arg).text[3:]][0])
             value.append(Temporary_frame[name.find(arg).text[3:]][1])
+        else:
+            sys.exit(55)
      elif(name.find(arg).attrib['type']=="string",
           name.find(arg).attrib['type']=="bool",
           name.find(arg).attrib['type']=="int",
           name.find(arg).attrib['type'] == "float",):
         if(name.find(arg).attrib['type']=="int"):
            value.append(int(name.find(arg).text))
+        elif(name.find(arg).attrib['type']== "string"):
+            value.append(escape_sequence(name.find(arg.text)))
         elif(name.find(arg).attrib['type']=="bool"):
            if (name.find(arg).text =="false"):
               value.append(False)
@@ -258,7 +280,7 @@ def get_value_comparasion(name):
            value.append(name.find(arg).text)
         value.append(name.find(arg).attrib['type'])
      else:
-         exit(55)
+         sys.exit(53)
      i+=1
      arg='arg3'
      return_value.append(value)
@@ -269,64 +291,64 @@ def get_variable_value(name, arg):
         if (name.find(arg).text[3:] in Global_frame):
             pass
         else:
-            exit(55)
+            sys.exit(54)
         try:
             return_value = Global_frame[name.find(arg).text[3:]]
         except:
-            exit(56)
+            sys.exit(56)
     elif (name.find(arg).text[:2] == "LF"):
         if (len(FrameStack) == 0):
-            exit(55)
+            sys.exit(55)
         if (name.find(arg).text[3:] in FrameStack[0]):
             pass
         else:
-            exit(55)
+            sys.exit(54)
         try:
             return_value=FrameStack[0][name.find('arg1').text[3:]]
         except:
-            exit(56)
+            sys.exit(56)
     elif (name.find(arg).text[:2] == "TF"):
         if (name.find(arg).text[3:] in Temporary_frame):
             pass
         else:
-            exit(55)
+            sys.exit(54)
         try:
             return_value= Temporary_frame[name.find(arg).text[3:]]
         except:
-            exit(57)
+            sys.exit(56)
     return return_value
 def save_variable_value(name, arg, value):
     if (name.find(arg).text[:2] == "GF"):
         if (name.find(arg).text[3:] in Global_frame):
             pass
         else:
-            exit(55)
+            sys.exit(54)
         try:
             Global_frame[name.find(arg).text[3:]] = value
         except:
-            exit(56)
+            sys.exit(56)
     elif (name.find(arg).text[:2] == "LF"):
         if (len(FrameStack) == 0):
-            exit(55)
+            sys.exit(55)
         if (name.find(arg).text[3:] in FrameStack[0]):
             pass
         else:
-            exit(55)
+            sys.exit(54)
         try:
             FrameStack[0][name.find(arg).text[3:]] = value
         except:
-            exit(56)
+            sys.exit(56)
     elif (name.find('arg1').text[:2] == "TF"):
         if (name.find('arg1').text[3:] in Temporary_frame):
             pass
         else:
-            exit(55)
+            sys.exit(54)
         try:
             Temporary_frame[name.find(arg).text[3:]] = value
         except:
-            exit(56)
+            sys.exit(56)
     else:
-        exit(55)
+        sys.exit(55)
 def sematic_check(root, instruction_number):
     global Temporary_frame
     global FrameStack
@@ -356,50 +378,49 @@ def sematic_check(root, instruction_number):
                          name.get('opcode').upper() == ("CONCAT"),
                          name.get('opcode').upper() == ("GETCHAR"),
                          name.get('opcode').upper() == ("SETCHAR"), ]
-        print(name.get('opcode') + " pozice: " + name.get('order'))
         if (name.get('opcode').upper() == "CREATEFRAME"):
            Temporary_frame.clear()
            Temporary_frame["defined"]="yes"
         if (name.get('opcode').upper() == "PUSHFRAME"):
            if (Temporary_frame["defined"] == "no"):
-                exit(55)
+                sys.exit(55)
            FrameStack.append(copy.deepcopy(Temporary_frame))
            Temporary_frame.clear()
            Temporary_frame["defined"]="no"
         if(name.get('opcode').upper() == "RETURN"):
             if(len(Stack_call) == 0):
-                exit(56)
+                sys.exit(52)
             instruction_number=Stack_call.pop()
             instruction_number+=1
             sematic_check(root, instruction_number)
             break
         if (name.get('opcode').upper() == "POPFRAME"):
            if (len(FrameStack) == 0):
-              exit(55)
+              sys.exit(55)
            Temporary_frame=FrameStack.pop()
 
         if (name.get('opcode').upper() == "DEFVAR"):
            if(name.find('arg1').text[:2] == "GF"):
               if(name.find('arg1').text[3:] in Global_frame):
-                  exit(55)
+                  sys.exit(54)
               Global_frame[name.find('arg1').text[3:]] = ""
            elif(name.find('arg1').text[:2] == "LF"):
               if(len(FrameStack) == 0):
-                  exit(55)
+                  sys.exit(55)
               if (name.find('arg1').text[3:] in FrameStack[0]):
-                  exit(55)
+                  sys.exit(54)
               FrameStack[0][name.find('arg1').text[3:]] = ""
            elif(name.find('arg1').text[:2] == "TF"):
              if (name.find('arg1').text[3:] in Temporary_frame):
-                 exit(55)
+                 sys.exit(54)
              Temporary_frame[name.find('arg1').text[3:]] = ""
            else:
-             exit(55)
+             sys.exit(55)
         if (name.get('opcode').upper() == "JUMP"):
             try:
                 instruction_number=Labels[name.find('arg1').text]
             except:
-                exit(55)
+                sys.exit(52)
             instruction_number+=1
             sematic_check(root, instruction_number)
             break
@@ -407,7 +428,7 @@ def sematic_check(root, instruction_number):
             try:
                 instruction_number=Labels[name.find('arg1').text]
             except:
-                exit(55)
+                sys.exit(52)
             instruction_number+=1
             Stack_call.append(int(name.get('order')))
             sematic_check(root, instruction_number)
@@ -416,17 +437,19 @@ def sematic_check(root, instruction_number):
         if (name.get('opcode').upper() == "PUSHS"):
             if(name.find('arg1').attrib['type'] == "var"):
                 push_value=get_variable_value(name, 'arg1')
-                print(push_value)
             else:
                 push_value=name.find('arg1').text
-                push_value=(push_value, name.find('arg1').attrib['type'])
+                if(name.find('arg1').attrib['type'] == "string"):
+                    push_value=(escape_sequence(name.find('arg1').text), name.find('arg1').attrib['type'])
+                else:
+                    push_value=(push_value, name.find('arg1').attrib['type'])
             Stack.append(push_value)
         if (name.get('opcode').upper() == "POPS"):
             if (name.find('arg1').attrib['type'] == "var"):
                 save_value = Stack.pop()
                 save_variable_value(name, "arg1", save_value)
             else:
-                exit(55)
+                sys.exit(53)
 
         if (name.get('opcode').upper() == "WRITE"):
             if(name.find('arg1').attrib['type']=="var"):
@@ -434,7 +457,7 @@ def sematic_check(root, instruction_number):
                     if (name.find('arg1').text[3:] in Global_frame):
                         pass
                     else:
-                        exit(55)
+                        sys.exit(54)
                     print(Global_frame[name.find('arg1').text[3:]][0], end='')
                 elif (name.find('arg1').text[:2] == "LF"):
                     if (len(FrameStack) == 0):
@@ -442,18 +465,19 @@ def sematic_check(root, instruction_number):
                     if (name.find('arg1').text[3:] in FrameStack[0]):
                         pass
                     else:
-                        exit(55)
+                        sys.exit(54)
                     print(FrameStack[0][name.find('arg1').text[3:]][0], end='')
                 elif (name.find('arg1').text[:2] == "TF"):
                     if (name.find('arg1').text[3:] in Temporary_frame):
                         pass
                     else:
-                        exit(55)
+                        sys.exit(54)
                     print(Temporary_frame[name.find('arg1').text[3:]][0], end='')
                 else:
-                    exit(55)
+                    sys.exit(54)
             if(name.find('arg1').attrib['type']=="string"):
-                print(name.find('arg1').text, end='')
+                value=escape_sequence(name.find('arg1').text)
+                print(value, end='')
             elif(name.find('arg1').attrib['type']=="int"):
                 print(name.find('arg1').text, end='')
             elif(name.find('arg1').attrib['type']=="nil"):
@@ -467,24 +491,24 @@ def sematic_check(root, instruction_number):
                 try:
                     exit_code=int(name.find('arg1').text)
                 except:
-                    exit(57)
+                    sys.exit(57)
 
             if( exit_code in range(0,49)):
-                    exit(exit_code)
+                    sys.exit(exit_code)
             else:
-                exit(57)
+                sys.exit(57)
         if(name.get('opcode').upper() == "STRLEN"):
             if (name.find('arg2').attrib['type'] == "var"):
                 string_len=get_variable_value(name, 'arg2')
                 if (string_len[1] != "string" and string_len[1] != "nil"):
-                    exit(58)
+                    sys.exit(58)
                 string_len=string_len[0]
             elif (name.find('arg2').attrib['type'] == "string"):
-                 string_len=name.find('arg2').text
+                 string_len=escape_sequence(name.find('arg1').text)
             elif (name.find('arg2').attrib['type'] == "nil"):
                  string_len=name.find('arg2').text
             else:
-                exit(58)
+                sys.exit(58)
             string_len=len(string_len)
             string_len=(string_len, "int")
             save_variable_value(name, "arg1", string_len)
@@ -496,22 +520,26 @@ def sematic_check(root, instruction_number):
                 type=name.find('arg2').attrib['type']
             save_variable_value(name, "arg1", (type, "type"))
         if(name.get('opcode').upper() == "READ"):
-            input_value= input()
-            if(name.find('arg2').text== "string"):
-                input_value=(input_value, "string")
-            elif(name.find('arg2').text== "int"):
-                input_value=(input_value, "int")
-            elif(name.find('arg2').text== "float"):
-                input_value=(input_value, "float")
-            elif(name.find('arg2').text== "bool"):
-                if(input_value.upper =="TRUE"):
-                    input_value="true"
+            try:
+                input_value= input()
+                if (name.find('arg2').text == "string"):
+                    input_value=escape_sequence(input_value)
+                    input_value = (input_value, "string")
+                elif (name.find('arg2').text == "int"):
+                    input_value = (input_value, "int")
+                elif (name.find('arg2').text == "float"):
+                    input_value = (input_value, "float")
+                elif (name.find('arg2').text == "bool"):
+                    if (input_value.upper == "TRUE"):
+                        input_value = "true"
+                    else:
+                        input_value = "false"
+                    input_value = (input_value, "bool")
                 else:
-                    input_value="false"
-                input_value=(input_value, "bool")
-            else:
-                input_value="nil"
-                input_value=(input_value, "nil")
+                    input_value = "nil"
+                    input_value = (input_value, "nil")
+            except EOFError:
+                input_value=("nil", "nil")
             save_variable_value(name, "arg1", input_value)
         if(name.get('opcode').upper() == "MOVE"):
            if(name.find('arg2').attrib['type'] == "var"):
@@ -520,6 +548,7 @@ def sematic_check(root, instruction_number):
                moved=moved[0]
            if (name.find('arg2').attrib['type'] == "string"):
                moved=name.find('arg2').text
+               moved=escape_sequence(moved)
                type=name.find('arg2').attrib['type']
            elif (name.find('arg2').attrib['type'] == "int"):
                moved=name.find('arg2').text
@@ -533,7 +562,7 @@ def sematic_check(root, instruction_number):
            if(name.find('arg1').attrib['type'] == "var"):
                save_variable_value(name, "arg1", (moved, type))
            else:
-               exit(55)
+               sys.exit(53)
         if (any(three_operand)):
             if(name.get('opcode').upper() == "ADD"):
                 first_value=int(find_value('arg2', name))
@@ -558,9 +587,9 @@ def sematic_check(root, instruction_number):
             elif(name.get('opcode').upper() == "LT"):
                 values=get_value_comparasion(name)
                 if(values[0][1] == "nil" or values[1][1]=="nil"):
-                    exit(54)
+                    sys.exit(53)
                 if(values[0][1] != values[1][1]):
-                    exit(54)
+                    sys.exit(53)
                 result=values[0][0] < values[1][0]
                 if(result == True):
                     result="true"
@@ -570,9 +599,9 @@ def sematic_check(root, instruction_number):
             elif (name.get('opcode').upper() == "GT"):
                 values = get_value_comparasion(name)
                 if (values[0][1] == "nil" or values[1][1] == "nil"):
-                    exit(54)
+                    sys.exit(53)
                 if (values[0][1] != values[1][1]):
-                    exit(54)
+                    sys.exit(53)
                 result = values[0][0] > values[1][0]
                 if(result == True):
                     result="true"
@@ -583,7 +612,7 @@ def sematic_check(root, instruction_number):
                 values = get_value_comparasion(name)
                 if (values[0][1] != "nil" and values[1][1] != "nil"):
                     if (values[0][1] != values[1][1]):
-                        exit(54)
+                        sys.exit(53)
                 result = values[0][0] == values[1][0]
                 if(result == True):
                     result="true"
@@ -593,7 +622,7 @@ def sematic_check(root, instruction_number):
             elif(name.get('opcode').upper() == "AND"):
                 values= get_value_comparasion(name)
                 if(values[0][1] != "bool" or values[1][1] !="bool"):
-                    exit(55)
+                    sys.exit(53)
                 if(values[0][0] == True and values[1][0] == True):
                     result="true"
                     type="bool"
@@ -603,7 +632,7 @@ def sematic_check(root, instruction_number):
             elif(name.get('opcode').upper() == "OR"):
                 values= get_value_comparasion(name)
                 if(values[0][1] != "bool" or values[1][1] !="bool"):
-                    exit(55)
+                    sys.exit(53)
                 if(values[0][0] == False and values[1][0] == False):
                     result="false"
                     type="bool"
@@ -623,26 +652,26 @@ def sematic_check(root, instruction_number):
                         if (name.find('arg1').text[3:] in Global_frame):
                             pass
                         else:
-                            exit(55)
+                            sys.exit(54)
                         result=Global_frame[name.find('arg1').text[3:]]
                     elif (name.find('arg1').text[:2] == "LF"):
                         if (len(FrameStack) == 0):
-                            exit(55)
+                            sys.exit(55)
                         if (name.find('arg1').text[3:] in FrameStack[0][0]):
                             pass
                         else:
-                            exit(55)
+                            sys.exit(54)
                         result = FrameStack[0][name.find('arg1').text[3:]]
                     elif (name.find('arg1').text[:2] == "TF"):
                         if (name.find('arg1').text[3:] in Temporary_frame):
                             pass
                         else:
-                            exit(55)
+                            sys.exit(54)
                         result= Temporary_frame[name.find('arg1').text[3:]]
                     else:
-                        exit(55)
+                        sys.exit(54)
                     if(result[1] != "bool"):
-                        exit(55)
+                        sysexit(53)
                     if(result[0] == "true"):
                         result="false"
                         type="bool"
@@ -652,79 +681,78 @@ def sematic_check(root, instruction_number):
             elif(name.get('opcode').upper() == "STRI2INT"):
                 values=get_value_comparasion(name)
                 if(values[0][1] != "string"):
-                    exit(55)
+                    sys.exit(53)
                 if(values[1][1] != "int"):
-                    exit(55)
+                    sys.exit(53)
                 try:
                     result=values[0][0][int(values[1][0])]
                     result=ord(result)
                     type="int"
                 except:
-                    exit(55)
+                    sys.exit(58)
             elif(name.get('opcode').upper() == "CONCAT"):
                 values=get_value_comparasion(name)
                 if(values[0][1] != "string" or values[1][1] != "string"):
-                    exit(55)
+                    sys.exit(53)
                 result=values[0][0]+values[1][0]
                 type="string"
             elif(name.get('opcode').upper() == "GETCHAR"):
                 values=get_value_comparasion(name)
                 if(values[0][1] != "string"):
-                    exit(55)
+                    sys.exit(53)
                 try:
                    position= int(values[1][0])
                 except:
-                    exit(55)
+                    sys.exit(53)
                 string=values[0][0]
                 try:
                     result=string[position]
                     type="string"
                 except:
-                    exit(58)
+                    sys.exit(58)
             elif(name.get('opcode').upper() == "SETCHAR"):
                 values=get_value_comparasion(name)
                 if(values[1][1] != "string"):
-                    exit(55)
+                    sys.exit(53)
                 if(values[1][0] == ""):
-                    exit(58)
+                    sys.exit(58)
                 try:
                    position= int(values[0][0])
                 except:
-                    exit(55)
+                    sys.exit(53)
                 if (name.find('arg1').text[:2] == "GF"):
                     if (name.find('arg1').text[3:] in Global_frame):
                         pass
                     else:
-                        exit(55)
+                        sys.exit(54)
                     string=Global_frame[name.find('arg1').text[3:]]
                 elif (name.find('arg1').text[:2] == "LF"):
                     if (len(FrameStack) == 0):
-                        exit(55)
+                        sys.exit(55)
                     if (name.find('arg1').text[3:] in FrameStack[0]):
                         pass
                     else:
-                        exit(55)
+                        sys.exit(54)
                     string=FrameStack[0][name.find('arg1').text[3:]]
                 elif (name.find('arg1').text[:2] == "TF"):
                     if (name.find('arg1').text[3:] in Temporary_frame):
                         pass
                     else:
-                        exit(55)
+                        sys.exit(54)
                     string=Temporary_frame[name.find('arg1').text[3:]]
                 else:
                     exit(55)
                 string=string[0]
                 string=list(string)
                 try:
-                    print()
                     string[position]=values[1][0]
                 except:
-                    exit(58)
+                    sys.exit(58)
                 result=''.join(string)
                 type="string"
 
             else:
-                exit(54)
+                sys.exit(32)
             if (name.find('arg1').attrib['type'] == "var"):
                 save_variable_value(name, "arg1", (result, type))
         if(name.get('opcode').upper() == "JUMPIFEQ" or name.get('opcode').upper() == "JUMPIFNEQ"):
@@ -734,7 +762,7 @@ def sematic_check(root, instruction_number):
                     try:
                         instruction_number = Labels[name.find('arg1').text]
                     except:
-                        exit(55)
+                        sys.exit(52)
                     instruction_number += 1
                     sematic_check(root, instruction_number)
                     break
@@ -743,12 +771,12 @@ def sematic_check(root, instruction_number):
                     try:
                         instruction_number = Labels[name.find('arg1').text]
                     except:
-                        exit(55)
+                        sys.exit(52)
                     instruction_number += 1
                     sematic_check(root, instruction_number)
                     break
             else:
-                exit(53)
+                sys.exit(32)
 
 
 
@@ -770,11 +798,21 @@ if(args.source == None):
     tree=ET.fromstring(source)
     tree=ET.ElementTree(tree)
 else:
-    tree=ET.parse(source)
+    try:
+        tree=ET.parse(source)
+    except:
+        sys.exit(31)
 root=tree.getroot()
+if(root.tag != "program"):
+    sys.exit(32)
 if(root.get('language').upper() != "IPPCODE20"):
-    exit(11)
+    sys.exit(11)
 #1. syntaktická kontrola (základní kontrola možný argumentů a ukládání labelů pro 2. kontrolu
+current_order=-1
+for name in root.findall('instruction'):
+    if(int(name.get('order')) < 0 or int(name.get('order'))<=current_order):
+        sys.exit(32)
+    current_order=int(name.get('order'))
 for name in root.findall('instruction'):
     parse_instruction(name)
 #2. Běh sematicka kontrola a interpretace
