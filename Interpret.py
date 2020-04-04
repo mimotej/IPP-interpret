@@ -12,6 +12,8 @@ Stack_call=[]
 Stack=[]
 def escape_sequence(string):
     i=0
+    if(string is None):
+        return string
     for c in string:
         if(c == '\\'):
             if(string[i+1]=="0"):
@@ -133,7 +135,6 @@ def parse_instruction(name):
         if(len(list(name)) == 1):
             if(name.find('arg1').attrib['type'] =="var" or any(constants_arg1)):
               check_constant(name, 'arg1')
-              print("zde")
               return
         sys.exit(32)
     elif(any(one_operand_label)):
@@ -393,7 +394,6 @@ def sematic_check(root, instruction_number):
     global FrameStack
     shcontinue= False
     for name in root.findall('instruction'):
-        print(name.get('order'))
         shcontinue=False
         while instruction_number != int(name.get('order')):
             if(instruction_number > int(name.get('order'))):
@@ -468,7 +468,6 @@ def sematic_check(root, instruction_number):
         if (name.get('opcode').upper() == "CALL"):
             try:
                 instruction_number=Labels[name.find('arg1').text]
-                print(instruction_number)
             except:
                 sys.exit(52)
             instruction_number+=1
@@ -736,7 +735,6 @@ def sematic_check(root, instruction_number):
             elif (name.get('opcode').upper() == "EQ"):
                 values = get_value_comparasion(name)
                 if (values[0][1] != "nil" and values[1][1] != "nil"):
-                    print(values)
                     if (values[0][1] != values[1][1]):
                         sys.exit(53)
                 result = values[0][0] == values[1][0]
@@ -887,8 +885,6 @@ def sematic_check(root, instruction_number):
                 save_variable_value(name, "arg1", (result, type))
         if(name.get('opcode').upper() == "JUMPIFEQ" or name.get('opcode').upper() == "JUMPIFNEQ"):
             values=get_value_comparasion(name)
-            print(values[0][0])
-            print(values[1][0])
             if(values[0][1] == values[1][1] or (values[0][0] == "nil" or values[1][0] == "nil")):
                 if(values[0][0] == values[1][0] and name.get('opcode').upper() == "JUMPIFEQ"):
                     try:
@@ -946,6 +942,5 @@ for name in root.findall('instruction'):
     current_order=int(name.get('order'))
 for name in root.findall('instruction'):
     parse_instruction(name)
-    print(name.get('order'))
 #2. Běh sematicka kontrola a interpretace
 sematic_check(root, 1)
