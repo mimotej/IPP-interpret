@@ -180,7 +180,7 @@ def parse_instruction(name):
     elif (any(three_operand_label)):
         if(len(list(name)) == 3):
             if(name.find('arg1').attrib['type'] == "label"):
-                if (re.search('^[a-zA-Z\*_\-\$&\%!\?]', name.find('arg1').text[3]) == None):
+                if (re.search('^[a-zA-Z\*_\-\$&\%!\?]', name.find('arg1').text) == None):
                     sys.exit(52)
                 if (any(constants_arg2) or name.find('arg2').attrib['type'] == "var"):
                     check_constant(name, 'arg2')
@@ -495,6 +495,11 @@ def sematic_check(root, instruction_number):
                         push_value=(float.fromhex(push_value))
                     except:
                         push_value=(float(push_value))
+                if(name.find('arg1').attrib['type'] == "int"):
+                    try:
+                        push_value=int(push_value)
+                    except:
+                        exit(53)
                 if(name.find('arg1').attrib['type'] == "string"):
                     push_value=(escape_sequence(name.find('arg1').text), name.find('arg1').attrib['type'])
                 else:
@@ -514,7 +519,7 @@ def sematic_check(root, instruction_number):
                         pass
                     else:
                         sys.exit(54)
-                    if(Global_frame[name.find('arg1').text[3:]][0]== "nil"):
+                    if(Global_frame[name.find('arg1').text[3:]][1]== "nil"):
                         print("", end='')
                     else:
                         if(Global_frame[name.find('arg1').text[3:]][1] == "float"):
@@ -530,7 +535,7 @@ def sematic_check(root, instruction_number):
                         pass
                     else:
                         sys.exit(54)
-                    if(value[name.find('arg1').text[3:]][0]== "nil"):
+                    if(value[name.find('arg1').text[3:]][1]== "nil"):
                         print("", end='')
                     else:
                         if(value[name.find('arg1').text[3:]][1] == "float"):
@@ -542,10 +547,10 @@ def sematic_check(root, instruction_number):
                         pass
                     else:
                         sys.exit(54)
-                    if(Temporary_frame[name.find('arg1').text[3:]][0]== "nil"):
+                    if(Temporary_frame[name.find('arg1').text[3:]][1]== "nil"):
                         print("", end='')
                     else:
-                        if(Temporary_frame[name.find('arg1').text[3:]][0] == "float"):
+                        if(Temporary_frame[name.find('arg1').text[3:]][1] == "float"):
                             print(float.hex(Temporary_frame[name.find('arg1').text[3:]][0]), end='')
                         else:
                             print(Temporary_frame[name.find('arg1').text[3:]][0], end='')
@@ -595,7 +600,10 @@ def sematic_check(root, instruction_number):
         if(name.get('opcode').upper() == "TYPE"):
             if (name.find('arg2').attrib['type'] == "var"):
                 type=get_variable_value(name, 'arg2')
-                type=type[1]
+                if(type==""):
+                    type=""
+                else:
+                    type=type[1]
             else:
                 type=name.find('arg2').attrib['type']
             save_variable_value(name, "arg1", (type, "type"))
@@ -604,7 +612,7 @@ def sematic_check(root, instruction_number):
                 integer=get_variable_value(name, 'arg2')
                 if(integer[1] != "int"):
                     sys.exit(53)
-                integer=chr(int[0])
+                integer=chr(integer[0])
             else:
                 if(name.find('arg2').attrib['type'] != "int"):
                     sys.exit(53)
@@ -612,7 +620,7 @@ def sematic_check(root, instruction_number):
                     integer=chr(int(name.find('arg2').text))
                 except:
                     sys.exit(57)
-                save_variable_value(name, "arg1", (integer, "string"))
+            save_variable_value(name, "arg1", (integer, "string"))
         if(name.get('opcode').upper() == "FLOAT2INT"):
             if (name.find('arg2').attrib['type'] == "var"):
                 floatpoint=get_variable_value(name, 'arg2')
@@ -674,7 +682,7 @@ def sematic_check(root, instruction_number):
                         input_value=float(input_value)
                     input_value = (input_value, "float")
                 elif (name.find('arg2').text == "bool"):
-                    if (input_value.upper == "TRUE"):
+                    if (input_value.upper() == "TRUE"):
                         input_value = "true"
                     else:
                         input_value = "false"
@@ -1017,13 +1025,45 @@ if(root.get('language').upper() != "IPPCODE20"):
     sys.exit(11)
 #1. syntaktická kontrola (základní kontrola možný argumentů a ukládání labelů pro 2. kontrolu
 current_order=-1
-for name in root.findall('instruction'):
-    try:
-        if(int(name.get('order')) < 0 or int(name.get('order'))<=current_order):
+while(1):
+    for name in root.findall('instruction'):
+        try:
+            if (int(name.get('order')) == current_order):
+                exit(32)
+            if (int(name.get('order')) < current_order):
+                root.remove(name)
+                for tmp_next in root.findall('instruction'):
+                    if (int(name.get('order')) == int(tmp_next.get('order'))):
+                        exit(32)
+                    if (int(name.get('order')) < int(tmp_next.get('order'))):
+                        next = int(tmp_next.get('order'))
+                        break
+                old_code = -1
+                for tmp_name in root.findall('instruction'):
+                    if (int(name.get('order')) == old_code):
+                        print("zde")
+                    if (int(name.get('order')) > old_code and int(name.get('order')) < next):
+                        if (old_code == -1):
+                            root.insert(0, name)
+                        else:
+                            tmp_name.addnext(name)
+                        break
+                    old_code = int(tmp_name.get('order'))
+            if (int(name.get('order')) < 0):
+                sys.exit(32)
+            current_order = int(name.get('order'))
+        except:
             sys.exit(32)
-        current_order=int(name.get('order'))
-    except:
-        sys.exit(32)
+    old_value=-1
+    for name in root.findall('instruction'):
+        if(old_value < int(name.get('order'))):
+            order=True
+        else:
+            order=False
+            break
+        old_value=int(name.get('order'))
+    if(order==True):
+        break
 for name in root.findall('instruction'):
     parse_instruction(name)
 #2. Běh sematicka kontrola a interpretace

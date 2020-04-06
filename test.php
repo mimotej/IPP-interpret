@@ -197,6 +197,8 @@ if ($interpreter_only == true) {
     $bad_file = "";
     $passed = 0;
     $d = 0;
+    $error_output="<TABLE><tr><td colspan='2'>DIFF ERROR-OUTPUTS</td></tr><tr><td>Soubor</td> <td>Výpis</td></tr>";
+    $donotexist=0;
     while ($i < count($src_array)) {
         $without_extension = substr_replace($src_array[$i], "", -4);
         $outfile = $without_extension . ".out";
@@ -210,16 +212,18 @@ if ($interpreter_only == true) {
         $exist = is_file($outfile);
         if ($exist == false) {
             $i++;
+            $passed++;
             continue;
         }
         $exist = is_file($rc_file);
         if ($exist == false) {
             $i++;
+            $passed++;
             continue;
         }
         $rc_value = file_get_contents($rc_file);
         if ($rc_value != $result_interpret) {
-            $bad_file .= "<tr><td>RC error</td> <td>" . $src_array[$i] . "</td></tr>";
+            $bad_file .= "<tr><td>RC error</td> <td>" . $src_array[$i] . "  [" . "má být -> ".$rc_value ." bylo -> " .$result_interpret. "]</td></tr>";
             $number_bad_files++;
             $i++;
             continue;
@@ -231,23 +235,24 @@ if ($interpreter_only == true) {
         }
         $command = "diff out.file " . $outfile;
         exec($command, $outfileshell, $result);
-        if ($result_interpret == 0) {
+        if ($result == 0) {
             $passed++;
         } else {
             $bad_file .= "<tr><td>DIFF ERROR</td> <td>" . $src_array[$i] . "</td></tr>";
-            $number_bad_files++;
+            $error_output .="<tr><td>".$src_array[$i]."</td> <td>".implode("",$outfileshell)."</td></tr>";
         }
         $i++;
     }
     if ($interpreter_only == true) {
         $type = "Interpreter";
     }
-    $output_html = "<HTML><BODY style=\"margin: 0 auto; width: 1280px;\"><H1>Vysledky testux</H1><H3>Typ testu: " . $type . "</H3>";
+    $output_html = "<HTML><BODY style=\"margin: 0 auto; width: 1280px;\"><H1>Vysledky testu</H1><H3>Typ testu: " . $type . "</H3>";
     $output_html .= "<table>" . "<tr><td>Proslo</td><td>Neproslo</td></tr><tr><td>" . $passed . "</td><td>" . $number_bad_files . "</td></tr></table>";
     $output_html .= "<H3>Chybne testy:</H3><table><tr><td>Typ chyby</td><td>Soubor</td></tr>" . $bad_file . "</table>";
+    $output_html.= $error_output."</TABLE>";
 }
 $close_body="</BODY></HTML>";
 $output_html.=$close_body;
 echo($output_html);
-echo "\n\n\n KONECNY VYSLEDEK:".$passed . "/".$i;
+echo "\n\n\n KONECNY VYSLEDEK:".$passed . "/".$i ;
 ?>
