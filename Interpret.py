@@ -53,36 +53,37 @@ def check_constant(name, arg):
         if(re.search('^[a-zA-Z\*_\-\$&\%!\?]', name.find(arg).text[0]) == None):
             exit(11)
 def parse_instruction(name):
-    no_operands=[name.get('opcode').upper() == ("CREATEFRAME"),
-                 name.get('opcode').upper() == ("POPFRAME"),
-                 name.get('opcode').upper() == ("PUSHFRAME"),
-                 name.get('opcode').upper() == ("RETURN"),
-                 name.get('opcode').upper() == ("BREAK")]
+    try:
+        no_operands = [name.get('opcode').upper() == ("CREATEFRAME"),
+                       name.get('opcode').upper() == ("POPFRAME"),
+                       name.get('opcode').upper() == ("PUSHFRAME"),
+                       name.get('opcode').upper() == ("RETURN"),
+                       name.get('opcode').upper() == ("BREAK")]
 
-    one_operand_var=[name.get('opcode').upper() == ("DEFVAR"),
-                     name.get('opcode').upper() == ("POPS")]
+        one_operand_var = [name.get('opcode').upper() == ("DEFVAR"),
+                           name.get('opcode').upper() == ("POPS")]
 
-    one_operand_symb=[name.get('opcode').upper() == ("PUSHS"),
-                      name.get('opcode').upper() == ("WRITE"),
-                      name.get('opcode').upper() == ("EXIT"),
-                      name.get('opcode').upper() == ("DPRINT")]
+        one_operand_symb = [name.get('opcode').upper() == ("PUSHS"),
+                            name.get('opcode').upper() == ("WRITE"),
+                            name.get('opcode').upper() == ("EXIT"),
+                            name.get('opcode').upper() == ("DPRINT")]
 
-    one_operand_label=[name.get('opcode').upper() == ("LABEL"),
-                       name.get('opcode').upper() == ("JUMP"),
-                       name.get('opcode').upper() == ("CALL"),]
-    two_operand_read = [name.get('opcode').upper() == ("READ")]
-    two_operand=[name.get('opcode').upper() == ("MOVE"),
-                     name.get('opcode').upper() == ("INT2CHAR"),
-                     name.get('opcode').upper() == ("STRLEN"),
-                     name.get('opcode').upper() == ("TYPE"),
-                     name.get('opcode').upper() == ("NOT"),
-                 name.get('opcode').upper() == ("INT2FLOAT"),
-                 name.get('opcode').upper() == ("FLOAT2INT"),]
-    three_operand=[name.get('opcode').upper() == ("ADD"),
+        one_operand_label = [name.get('opcode').upper() == ("LABEL"),
+                         name.get('opcode').upper() == ("JUMP"),
+                         name.get('opcode').upper() == ("CALL"), ]
+        two_operand_read = [name.get('opcode').upper() == ("READ")]
+        two_operand = [name.get('opcode').upper() == ("MOVE"),
+                   name.get('opcode').upper() == ("INT2CHAR"),
+                   name.get('opcode').upper() == ("STRLEN"),
+                   name.get('opcode').upper() == ("TYPE"),
+                   name.get('opcode').upper() == ("NOT"),
+                   name.get('opcode').upper() == ("INT2FLOAT"),
+                   name.get('opcode').upper() == ("FLOAT2INT"), ]
+        three_operand = [name.get('opcode').upper() == ("ADD"),
                      name.get('opcode').upper() == ("SUB"),
                      name.get('opcode').upper() == ("MUL"),
                      name.get('opcode').upper() == ("IDIV"),
-                   name.get('opcode').upper() == ("DIV"),
+                     name.get('opcode').upper() == ("DIV"),
                      name.get('opcode').upper() == ("LT"),
                      name.get('opcode').upper() == ("GT"),
                      name.get('opcode').upper() == ("EQ"),
@@ -91,9 +92,11 @@ def parse_instruction(name):
                      name.get('opcode').upper() == ("STRI2INT"),
                      name.get('opcode').upper() == ("CONCAT"),
                      name.get('opcode').upper() == ("GETCHAR"),
-                     name.get('opcode').upper() == ("SETCHAR"),]
-    three_operand_label=[name.get('opcode').upper() == ("JUMPIFEQ"),
-                         name.get('opcode').upper() == ("JUMPIFNEQ"),]
+                     name.get('opcode').upper() == ("SETCHAR"), ]
+        three_operand_label = [name.get('opcode').upper() == ("JUMPIFEQ"),
+                           name.get('opcode').upper() == ("JUMPIFNEQ"), ]
+    except:
+        sys.exit(32)
     if(len(list(name)) == 1 or len(list(name)) == 2 or len(list(name)) == 3):
         try:
             constants_arg1=[name.find('arg1').attrib['type']=="string",
@@ -197,8 +200,8 @@ def find_value(arg, name):
                     exit(55)
             else:
                 sys.exit(54)
-            value.append(Global_frame[name.find('arg2').text[3:]][0])
-            value.append(Global_frame[name.find('arg2').text[3:]][1])
+            value.append(Global_frame[name.find(arg).text[3:]][0])
+            value.append(Global_frame[name.find(arg).text[3:]][1])
         elif (name.find(arg).text[:2] == "LF"):
             if (len(FrameStack) == 0):
                 sys.exit(55)
@@ -209,8 +212,8 @@ def find_value(arg, name):
                     sys.exit(55)
             else:
                 sys.exit(54)
-            value.append(frame[name.find('arg2').text[3:]][0])
-            value.append(frame[name.find('arg2').text[3:]][1])
+            value.append(frame[name.find(arg).text[3:]][0])
+            value.append(frame[name.find(arg).text[3:]][1])
         elif (name.find(arg).text[:2] == "TF"):
             if (name.find(arg).text[3:] in Temporary_frame):
                 if (Temporary_frame[name.find(arg).text[3:]][1] != "int" and Temporary_frame[name.find(arg).text[3:]][1] != "float"):
@@ -224,7 +227,6 @@ def find_value(arg, name):
             value.append(int(name.find(arg).text))
             value.append("int")
         except:
-            value[0] = int(name.find(arg).text)
             sys.exit(57)
     elif(name.find(arg).attrib['type'] == "float"):
         try:
@@ -232,7 +234,10 @@ def find_value(arg, name):
             value.append("float")
         except:
             try:
-                value.append(float.fromhex(name.find(arg).text))
+                try:
+                    value.append(float.fromhex(name.find(arg).text))
+                except:
+                    value.append(float(name.find(arg).text))
                 value.append("float")
             except:
                 sys.exit(57)
@@ -304,7 +309,7 @@ def get_value_comparasion(name):
             float_num=name.find(arg).text
             try:
                 int(float_num)
-                value.append(float_num)
+                value.append(float(float_num))
             except:
                 value.append(float.fromhex(float_num))
         elif(name.find(arg).attrib['type']=="bool"):
@@ -407,6 +412,7 @@ def sematic_check(root, instruction_number):
                          name.get('opcode').upper() == ("SUB"),
                          name.get('opcode').upper() == ("MUL"),
                          name.get('opcode').upper() == ("IDIV"),
+                         name.get('opcode').upper() == ("DIV"),
                          name.get('opcode').upper() == ("LT"),
                          name.get('opcode').upper() == ("GT"),
                          name.get('opcode').upper() == ("EQ"),
@@ -480,6 +486,11 @@ def sematic_check(root, instruction_number):
                 push_value=get_variable_value(name, 'arg1')
             else:
                 push_value=name.find('arg1').text
+                if(name.find('arg1').attrib['type'] == "float"):
+                    try:
+                        push_value=(float.fromhex(push_value))
+                    except:
+                        push_value=(float(push_value))
                 if(name.find('arg1').attrib['type'] == "string"):
                     push_value=(escape_sequence(name.find('arg1').text), name.find('arg1').attrib['type'])
                 else:
@@ -499,7 +510,13 @@ def sematic_check(root, instruction_number):
                         pass
                     else:
                         sys.exit(54)
-                    print(Global_frame[name.find('arg1').text[3:]][0], end='')
+                    if(Global_frame[name.find('arg1').text[3:]][0]== "nil"):
+                        print("", end='')
+                    else:
+                        if(Global_frame[name.find('arg1').text[3:]][1] == "float"):
+                            print(float.hex(Global_frame[name.find('arg1').text[3:]][0]), end='')
+                        else:
+                            print(Global_frame[name.find('arg1').text[3:]][0], end='')
                 elif (name.find('arg1').text[:2] == "LF"):
                     if (len(FrameStack) == 0):
                         exit(55)
@@ -509,13 +526,25 @@ def sematic_check(root, instruction_number):
                         pass
                     else:
                         sys.exit(54)
-                    print(value[name.find('arg1').text[3:]][0], end='')
+                    if(value[name.find('arg1').text[3:]][0]== "nil"):
+                        print("", end='')
+                    else:
+                        if(value[name.find('arg1').text[3:]][1] == "float"):
+                            print(float.hex(value[name.find('arg1').text[3:]][0]), end='')
+                        else:
+                            print(value[name.find('arg1').text[3:]][0], end='')
                 elif (name.find('arg1').text[:2] == "TF"):
                     if (name.find('arg1').text[3:] in Temporary_frame):
                         pass
                     else:
                         sys.exit(54)
-                    print(Temporary_frame[name.find('arg1').text[3:]][0], end='')
+                    if(Temporary_frame[name.find('arg1').text[3:]][0]== "nil"):
+                        print("", end='')
+                    else:
+                        if(Temporary_frame[name.find('arg1').text[3:]][0] == "float"):
+                            print(float.hex(Temporary_frame[name.find('arg1').text[3:]][0]), end='')
+                        else:
+                            print(Temporary_frame[name.find('arg1').text[3:]][0], end='')
                 else:
                     sys.exit(54)
             if(name.find('arg1').attrib['type']=="string"):
@@ -524,9 +553,9 @@ def sematic_check(root, instruction_number):
             elif(name.find('arg1').attrib['type']=="int"):
                 print(name.find('arg1').text, end='')
             elif(name.find('arg1').attrib['type']=="nil"):
-                print(name.find('arg1').text, end='')
+                print("", end='')
             elif(name.find('arg1').attrib['type']=="float"):
-                print(name.find('arg1').text, end='')
+                print(float.hex(name.find('arg1').text), end='')
         if (name.get('opcode').upper() == "EXIT"):
             if(name.find('arg1').attrib['type'] == "var"):
                 exit_code=get_variable_value(name, "arg1")
@@ -651,7 +680,7 @@ def sematic_check(root, instruction_number):
            elif (name.find('arg2').attrib['type'] == "float"):
                try:
                     int(name.find('arg2').text)
-                    moved=name.find('arg2').text
+                    moved=float(name.find('arg2').text)
                     type=name.find('arg2').attrib['type']
                except:
                     moved=float.fromhex(name.find('arg2').text)
@@ -696,13 +725,17 @@ def sematic_check(root, instruction_number):
                 value2=find_value('arg3', name)
                 first_value=value1[0]
                 second_value=value2[0]
+                if(second_value == 0):
+                    sys.exit(57)
                 result=first_value//second_value
                 type="int"
-            elif (name.get('opcode').upper() == "IDIV"):
+            elif (name.get('opcode').upper() == "DIV"):
                 value1=find_value('arg2', name)
                 value2=find_value('arg3', name)
                 first_value=value1[0]
                 second_value=value2[0]
+                if(second_value == 0):
+                    sys.exit(57)
                 result=first_value/second_value
                 if(value1[1] == "int" and value2[1] == "int"):
                     type="int"
@@ -913,10 +946,6 @@ source=args.source
 input_args=args.source
 if(args.input == None and args.source == None):
     exit(11)
-elif(args.input == None):
-   input_args=""
-   for line in sys.stdin:
-       input_args+=line
 elif(args.source == None):
     source=""
     for line in sys.stdin:
@@ -929,6 +958,11 @@ else:
         tree=ET.parse(source)
     except:
         sys.exit(31)
+if (args.input != None):
+    try:
+        sys.stdin=open(args.input, 'r')
+    except:
+        sys.exit(11)
 root=tree.getroot()
 if(root.tag != "program"):
     sys.exit(32)
@@ -937,9 +971,12 @@ if(root.get('language').upper() != "IPPCODE20"):
 #1. syntaktická kontrola (základní kontrola možný argumentů a ukládání labelů pro 2. kontrolu
 current_order=-1
 for name in root.findall('instruction'):
-    if(int(name.get('order')) < 0 or int(name.get('order'))<=current_order):
+    try:
+        if(int(name.get('order')) < 0 or int(name.get('order'))<=current_order):
+            sys.exit(32)
+        current_order=int(name.get('order'))
+    except:
         sys.exit(32)
-    current_order=int(name.get('order'))
 for name in root.findall('instruction'):
     parse_instruction(name)
 #2. Běh sematicka kontrola a interpretace
