@@ -351,6 +351,8 @@ def get_variable_value(name, arg):
         except:
             sys.exit(56)
     elif (name.find(arg).text[:2] == "TF"):
+        if(Temporary_frame["defined"] == "no"):
+            exit(55)
         if (name.find(arg).text[3:] in Temporary_frame):
             pass
         else:
@@ -383,8 +385,10 @@ def save_variable_value(name, arg, value):
         except:
             sys.exit(56)
         FrameStack.append(frame)
-    elif (name.find('arg1').text[:2] == "TF"):
-        if (name.find('arg1').text[3:] in Temporary_frame):
+    elif (name.find(arg).text[:2] == "TF"):
+        if(Temporary_frame["defined"] == "no"):
+            exit(55)
+        if (name.find(arg).text[3:] in Temporary_frame):
             pass
         else:
             sys.exit(54)
@@ -555,7 +559,11 @@ def sematic_check(root, instruction_number):
             elif(name.find('arg1').attrib['type']=="nil"):
                 print("", end='')
             elif(name.find('arg1').attrib['type']=="float"):
-                print(float.hex(name.find('arg1').text), end='')
+                try:
+                    float_value=float.fromhex(name.find('arg1').text)
+                except:
+                    float_value=float(name.find('arg1').text)
+                print(float.hex(float_value), end='')
         if (name.get('opcode').upper() == "EXIT"):
             if(name.find('arg1').attrib['type'] == "var"):
                 exit_code=get_variable_value(name, "arg1")
@@ -608,9 +616,16 @@ def sematic_check(root, instruction_number):
         if(name.get('opcode').upper() == "FLOAT2INT"):
             if (name.find('arg2').attrib['type'] == "var"):
                 floatpoint=get_variable_value(name, 'arg2')
-                if(floatpoint[1] != "float"):
+                try:
+                    floatpoint[1]
+                except:
+                    sys.exit(56)
+                try:
+                    integer = int(floatpoint[0])
+                except:
                     sys.exit(53)
-                integer=int(floatpoint[0])
+                if (floatpoint[1] != "float"):
+                    sys.exit(53)
             else:
                 if(name.find('arg2').attrib['type'] != "float"):
                     sys.exit(53)
@@ -622,13 +637,20 @@ def sematic_check(root, instruction_number):
                     integer=int(floatpoint)
                 except:
                     sys.exit(57)
-                save_variable_value(name, "arg1", (integer, "int"))
+            save_variable_value(name, "arg1", (integer, "int"))
         if(name.get('opcode').upper() == "INT2FLOAT"):
             if (name.find('arg2').attrib['type'] == "var"):
                 integer=get_variable_value(name, 'arg2')
-                if(integer[1] != "int"):
+                try:
+                    integer[1]
+                except:
+                    sys.exit(56)
+                try:
+                    floatpoint = float(integer[0])
+                except:
                     sys.exit(53)
-                floatpoint=float(integer[0])
+                if (integer[1] != "int"):
+                    sys.exit(53)
             else:
                 if(name.find('arg2').attrib['type'] != "float"):
                     sys.exit(53)
@@ -636,7 +658,7 @@ def sematic_check(root, instruction_number):
                     floatpoint=float(int(name.find('arg2').text))
                 except:
                     sys.exit(57)
-                save_variable_value(name, "arg1", (floatpoint, "float"))
+            save_variable_value(name, "arg1", (floatpoint, "float"))
         if(name.get('opcode').upper() == "READ"):
             try:
                 input_value= input()
@@ -646,6 +668,10 @@ def sematic_check(root, instruction_number):
                 elif (name.find('arg2').text == "int"):
                     input_value = (input_value, "int")
                 elif (name.find('arg2').text == "float"):
+                    try:
+                        input_value=float.fromhex(input_value)
+                    except:
+                        input_value=float(input_value)
                     input_value = (input_value, "float")
                 elif (name.find('arg2').text == "bool"):
                     if (input_value.upper == "TRUE"):
@@ -695,6 +721,11 @@ def sematic_check(root, instruction_number):
                 value2=find_value('arg3', name)
                 first_value=value1[0]
                 second_value=value2[0]
+                if(value1[1] != value2[1]):
+                    sys.exit(53)
+                if(value1[1] != "int" and value1[1] != "float"):
+                    print(value2[1])
+                    sys.exit(53)
                 result=first_value+second_value
                 if(value1[1] == "int" and value2[1] == "int"):
                     type="int"
@@ -705,6 +736,10 @@ def sematic_check(root, instruction_number):
                 value2=find_value('arg3', name)
                 first_value=value1[0]
                 second_value=value2[0]
+                if(value1[1] != value2[1]):
+                    sys.exit(53)
+                if(value1[1] != "int" and value1[1] != "float"):
+                    sys.exit(53)
                 result=first_value-second_value
                 if(value1[1] == "int" and value2[1] == "int"):
                     type="int"
@@ -715,6 +750,10 @@ def sematic_check(root, instruction_number):
                 value2=find_value('arg3', name)
                 first_value=value1[0]
                 second_value=value2[0]
+                if(value1[1] != value2[1]):
+                    sys.exit(53)
+                if(value1[1] != "int" and value1[1] != "float"):
+                    sys.exit(53)
                 result=first_value*second_value
                 if(value1[1] == "int" and value2[1] == "int"):
                     type="int"
@@ -725,6 +764,10 @@ def sematic_check(root, instruction_number):
                 value2=find_value('arg3', name)
                 first_value=value1[0]
                 second_value=value2[0]
+                if(value1[1] != value2[1]):
+                    sys.exit(53)
+                if(value1[1] != "int"):
+                    sys.exit(53)
                 if(second_value == 0):
                     sys.exit(57)
                 result=first_value//second_value
@@ -736,6 +779,10 @@ def sematic_check(root, instruction_number):
                 second_value=value2[0]
                 if(second_value == 0):
                     sys.exit(57)
+                if (value1[1] != value2[1]):
+                    sys.exit(53)
+                if(value1[1] != "int" and value1[1] != "float"):
+                    sys.exit(53)
                 result=first_value/second_value
                 if(value1[1] == "int" and value2[1] == "int"):
                     type="int"
