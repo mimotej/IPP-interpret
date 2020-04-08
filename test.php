@@ -113,14 +113,85 @@ function get_files($type, $array, $path){
     return $output_array;
 }
 getparams();
-if ($parser_only == true) {
+if($parser_only == false && $interpreter_only==false){
     $src_array = get_files("src", "none", $path);
     $outfileshell;
+    $outfileshellint;
+    $result_interpret;
     $i = 0;
     $number_bad_files = 0;
     $e = 0;
     $result_parse = 5;
+    $bad_file = "";
+    $passed = 0;
+    $d = 0;
+    $error_output="<TABLE><tr><td colspan='2'>DIFF ERROR-OUTPUTS</td></tr><tr><td>Soubor</td> <td>Výpis</td></tr>";
+    while ($i < count($src_array)) {
+        $without_extension = substr_replace($src_array[$i], "", -4);
+        $outfile = $without_extension . ".out";
+        $rc_file = $without_extension . ".rc";
+        $in_file = $without_extension . ".in";
+        $exist = is_file($rc_file);
+        if ($exist == false) {
+            $rc_value=0;
+        }
+        if($exist== true) {
+            $rc_value = file_get_contents($rc_file);
+        }
+        if($exist == false){
+            $dump=fopen($in_file, "w");
+        }
+        $command = "php " . $parser_file . " < " . $src_array[$i] . " > out.file";
+        exec($command, $outfileshell, $result_parse);
+        if($result_parse != 0) {
+            if ($rc_value != $result_parse) {
+                $bad_file .= "<tr><td>RC error - parser</td> <td>" . $src_array[$i] . "</td></tr>";
+                $number_bad_files++;
+                $i++;
+                continue;
+            }
+        }
+        $command = "python3.8 " . $interpreter_file . " --source=" . "out.file" . " --input=" . $in_file . " > out1.file";
+        exec($command, $outfileshellint, $result_interpret);
+        $exist = is_file($outfile);
+        if ($exist == false) {
+            $outfile="";
+        }
+        if ($rc_value != $result_interpret) {
+            $bad_file .= "<tr><td>RC error</td> <td>" . $src_array[$i] . "  [" . "má být -> ".$rc_value ." bylo -> " .$result_interpret. "]</td></tr>";
+            $number_bad_files++;
+            $i++;
+            continue;
+        }
+        if ($rc_value != 0) {
+            $passed++;
+            $i++;
+            continue;
+        }
+        $command = "diff out1.file " . $outfile;
+        exec($command, $outfileshell, $result);
+        if ($result == 0) {
+            $passed++;
+        } else {
+            $bad_file .= "<tr><td>DIFF ERROR</td> <td>" . $src_array[$i] . "</td></tr>";
+            $error_output .="<tr><td>".$src_array[$i]."</td> <td>".implode("",$outfileshell)."</td></tr>";
+        }
+        $i++;
+    }
+    $type = "Both";
+    $output_html = "<HTML><BODY style=\"margin: 0 auto; width: 1280px;\"><H1>Vysledky testu</H1><H3>Typ testu: " . $type . "</H3>";
+    $output_html .= "<table>" . "<tr><td>Proslo</td><td>Neproslo</td></tr><tr><td>" . $passed . "</td><td>" . $number_bad_files . "</td></tr></table>";
+    $output_html .= "<H3>Chybne testy:</H3><table><tr><td>Typ chyby</td><td>Soubor</td></tr>" . $bad_file . "</table>";
+    $output_html.= $error_output."</TABLE>";
+}
+if ($parser_only == true) {
+    $src_array = get_files("src", "none", $path);
+    $outfileshell;
     $result_interpret;
+    $i = 0;
+    $number_bad_files = 0;
+    $e = 0;
+    $result_parse = 5;
     $bad_file = "";
     $passed = 0;
     $d = 0;
@@ -129,12 +200,8 @@ if ($parser_only == true) {
         $outfile = $without_extension . ".out";
         $rc_file = $without_extension . ".rc";
         if ($interpreter_only == false) {
-            $command = "php " . $parser_file . " < " . $src_array[$i] . " > out.file";
+            $command = "php7.4 " . $parser_file . " < " . $src_array[$i] . " > out.file";
             exec($command, $outfileshell, $result_parse);
-        }
-        if ($parser_only == false) {
-            $command = "python3.8 " . $interpreter_file . " --source=" . $src_array[$i] . " --input=" . $inputfile . " > out.file";
-            exec($command, $outfileshell, $result_interpret);
         }
         $exist = is_file($outfile);
         if ($exist == false) {
@@ -147,7 +214,7 @@ if ($parser_only == true) {
             continue;
         }
         $rc_value = file_get_contents($rc_file);
-        if ($rc_value != $result_interpret) {
+        if ($rc_value != $result_parse) {
             $bad_file .= "<tr><td>RC error</td> <td>" . $src_array[$i] . "</td></tr>";
             $number_bad_files++;
             $i++;
@@ -158,20 +225,9 @@ if ($parser_only == true) {
             $i++;
             continue;
         }
-        if ($parser_only == false) {
-            $command = "diff out.file " . $outfile;
-        }
-        if ($interpreter_only == false) {
-            if ($rc_value != $result_parse) {
-                $bad_file .= "<tr><td>RC error</td> <td>" . $src_array[$i] . "</td></tr>";
-                $number_bad_files++;
-                $i++;
-                continue;
-            }
-            $command = "java -jar " . $jexam . " ./out.file " . "./" . $outfile;
-        }
+        $command = "java -jar " . $jexam . " ./out.file " . "./" . $outfile;
         exec($command, $outfileshell, $result);
-        if ($result_parse == 0 || $result_interpret == 0) {
+        if ($result_parse == 0) {
             $passed++;
         } else {
             $bad_file .= "<tr><td>JEXAMXL error</td> <td>" . $src_array[$i] . "</td></tr>";
@@ -182,7 +238,7 @@ if ($parser_only == true) {
     if ($parser_only == true) {
         $type = "Parse";
     }
-    $output_html = "<HTML><BODY style=\"margin: 0 auto; width: 1280px;\"><H1>Vysledky testux</H1><H3>Typ testu: " . $type . "</H3>";
+    $output_html = "<HTML><BODY style=\"margin: 0 auto; width: 1280px;\"><H1>Vysledky testu</H1><H3>Typ testu: " . $type . "</H3>";
     $output_html .= "<table>" . "<tr><td>Proslo</td><td>Neproslo</td></tr><tr><td>" . $passed . "</td><td>" . $number_bad_files . "</td></tr></table>";
     $output_html .= "<H3>Chybne testy:</H3><table><tr><td>Typ chyby</td><td>Soubor</td></tr>" . $bad_file . "</table>";
 }
@@ -251,6 +307,10 @@ if ($interpreter_only == true) {
     $output_html .= "<H3>Chybne testy:</H3><table><tr><td>Typ chyby</td><td>Soubor</td></tr>" . $bad_file . "</table>";
     $output_html.= $error_output."</TABLE>";
 }
+$file_pointer="out.file";
+unlink($file_pointer);
+$file_pointer="out1.file";
+unlink($file_pointer);
 $close_body="</BODY></HTML>";
 $output_html.=$close_body;
 echo($output_html);

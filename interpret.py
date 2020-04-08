@@ -1367,6 +1367,8 @@ args=parse_arguments()
 source=args.source
 input_args=args.source
 if(args.help):
+    if(args.source != None or args.input != None):
+        sys.exit(10)
     print("Napoveda k programu - program se spousti pomoci:\n python3.8 --source=$source_file --input=$input_file")
     sys.exit(0)
 if(args.input == None and args.source == None):
