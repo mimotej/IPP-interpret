@@ -212,6 +212,8 @@ def find_value(arg, name):
     if (name.find(arg).attrib['type'] == "var"):
         if (name.find(arg).text[:2] == "GF"):
             if (name.find(arg).text[3:] in Global_frame):
+                if(len(Global_frame[name.find(arg).text[3:]]) == 0):
+                    sys.exit(56)
                 if (Global_frame[name.find(arg).text[3:]][1] != "int" and Global_frame[name.find(arg).text[3:]][1] != "float"):
                     exit(55)
             else:
@@ -224,6 +226,8 @@ def find_value(arg, name):
             frame=FrameStack.pop()
             FrameStack.append(frame)
             if (name.find(arg).text[3:] in frame):
+                if(len(frame[name.find(arg).text[3:]]) == 0):
+                    sys.exit(56)
                 if (frame[name.find(arg).text[3:]][1] != "int" and frame[name.find(arg).text[3:]][1] != "float"):
                     sys.exit(55)
             else:
@@ -231,7 +235,11 @@ def find_value(arg, name):
             value.append(frame[name.find(arg).text[3:]][0])
             value.append(frame[name.find(arg).text[3:]][1])
         elif (name.find(arg).text[:2] == "TF"):
+            if (Temporary_frame['defined'] == "no"):
+                sys.exit(55)
             if (name.find(arg).text[3:] in Temporary_frame):
+                if(len(Temporary_frame[name.find(arg).text[3:]]) == 0):
+                    sys.exit(56)
                 if (Temporary_frame[name.find(arg).text[3:]][1] != "int" and Temporary_frame[name.find(arg).text[3:]][1] != "float"):
                     sys.exit(55)
             else:
@@ -270,6 +278,8 @@ def get_value_comparasion(name):
      if (name.find(arg).attrib['type'] == "var"):
         if (name.find(arg).text[:2] == "GF"):
             if (name.find(arg).text[3:] in Global_frame):
+                if(len(Global_frame[name.find(arg).text[3:]]) == 0):
+                    sys.exit(56)
                 if (Global_frame[name.find(arg).text[3:]][1] != "int" and
                     Global_frame[name.find(arg).text[3:]][1] != "string" and
                     Global_frame[name.find(arg).text[3:]][1] != "bool" and
@@ -287,6 +297,8 @@ def get_value_comparasion(name):
             frame=FrameStack.pop()
             FrameStack.append(frame)
             if (name.find(arg).text[3:] in frame):
+                if(len(frame[name.find(arg).text[3:]]) == 0):
+                    sys.exit(56)
                 if (frame[name.find(arg).text[3:]][1] != "int" and
                     frame[name.find(arg).text[3:]][1] != "string" and
                     frame[name.find(arg).text[3:]][1] != "bool" and
@@ -299,7 +311,11 @@ def get_value_comparasion(name):
             value.append(frame[name.find(arg).text[3:]][0])
             value.append(frame[name.find(arg).text[3:]][1])
         elif (name.find(arg).text[:2] == "TF"):
+            if(Temporary_frame['defined'] =="no"):
+                sys.exit(55)
             if (name.find(arg).text[3:] in Temporary_frame):
+                if(len(Temporary_frame[name.find(arg).text[3:]]) == 0):
+                    sys.exit(56)
                 if (Temporary_frame[name.find(arg).text[3:]][1] != "int" and
                     Temporary_frame[name.find(arg).text[3:]][1] != "string" and
                     Temporary_frame[name.find(arg).text[3:]][1] != "int" and
@@ -330,9 +346,9 @@ def get_value_comparasion(name):
                 value.append(float.fromhex(float_num))
         elif(name.find(arg).attrib['type']=="bool"):
            if (name.find(arg).text =="false"):
-              value.append(False)
+              value.append("false")
            else:
-               value.append(True)
+               value.append("true")
         else:
            value.append(name.find(arg).text)
         value.append(name.find(arg).attrib['type'])
@@ -797,19 +813,21 @@ def sematic_check(root, instruction_number):
         if (name.get('opcode').upper() == "DEFVAR"):
             if(name.find('arg1').text[:2] == "GF"):
                 if(name.find('arg1').text[3:] in Global_frame):
-                    sys.exit(54)
+                    sys.exit(52)
                 Global_frame[name.find('arg1').text[3:]] = ""
             elif(name.find('arg1').text[:2] == "LF"):
                 if(len(FrameStack) == 0):
                     sys.exit(55)
                 value=FrameStack.pop()
                 if (name.find('arg1').text[3:] in value):
-                    sys.exit(54)
+                    sys.exit(52)
                 value[name.find('arg1').text[3:]] = ""
                 FrameStack.append(value)
             elif(name.find('arg1').text[:2] == "TF"):
+                if (Temporary_frame["defined"] == "no"):
+                    exit(55)
                 if (name.find('arg1').text[3:] in Temporary_frame):
-                    sys.exit(54)
+                    sys.exit(52)
                 Temporary_frame[name.find('arg1').text[3:]] = ""
             else:
                 sys.exit(55)
@@ -937,11 +955,17 @@ def sematic_check(root, instruction_number):
         if (name.get('opcode').upper() == "EXIT"):
             if(name.find('arg1').attrib['type'] == "var"):
                 exit_code=get_variable_value(name, "arg1")
+                if(exit_code=None):
+                    sys.exit(56)
+                try:
+                    exit_code=int(exit_code);
+                except:
+                    sys.exit(53)
             else:
                 try:
                     exit_code=int(name.find('arg1').text)
                 except:
-                    sys.exit(57)
+                    sys.exit(53)
 
             if( exit_code in range(0,49)):
                 sys.exit(exit_code)
@@ -1087,6 +1111,15 @@ def sematic_check(root, instruction_number):
                 except:
                     moved=float.fromhex(name.find('arg2').text)
                     type=name.find('arg2').attrib['type']
+            elif(name.find('arg2').attrib['type'] == "bool"):
+                if(name.find('arg2').text == "true"):
+                    moved="true"
+                    type="bool"
+                elif(name.find('arg2').text == "false"):
+                    moved="false"
+                    type="bool"
+                else:
+                    sys.exit(53)
             if(name.find('arg1').attrib['type'] == "var"):
                 save_variable_value(name, "arg1", (moved, type))
             else:
@@ -1275,7 +1308,12 @@ def sematic_check(root, instruction_number):
                 values=get_value_comparasion(name)
                 if(values[0][1] != "string" or values[1][1] != "string"):
                     sys.exit(53)
-                result=values[0][0]+values[1][0]
+                if(values[0][0] == None):
+                    result=values[1][0]
+                elif(values[1][0]== None):
+                    result=values[0][0]
+                else:
+                    result=values[0][0]+values[1][0]
                 type="string"
             elif(name.get('opcode').upper() == "GETCHAR"):
                 values=get_value_comparasion(name)

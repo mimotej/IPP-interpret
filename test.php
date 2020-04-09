@@ -138,6 +138,7 @@ if($parser_only == false && $interpreter_only==false){
         if($exist== true) {
             $rc_value = file_get_contents($rc_file);
         }
+        $exist = is_file($in_file);
         if($exist == false){
             $dump=fopen($in_file, "w");
         }
