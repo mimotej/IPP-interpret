@@ -16,12 +16,15 @@ def escape_sequence(string):
         return string
     for c in string:
         if(c == '\\'):
-            if(string[i+1]=="0"):
-                string=string[:i]+chr(int(string[i+2 : i+4]))+string[i+4:]
-                i-=3
-            else:
-                string=string[:i]+chr(int(string[i+1 : i+4]))+string[i+4:]
-                i-=3
+            try:
+                if(string[i+1]=="0"):
+                    string=string[:i]+chr(int(string[i+2 : i+4]))+string[i+4:]
+                    i-=3
+                else:
+                    string=string[:i]+chr(int(string[i+1 : i+4]))+string[i+4:]
+                    i-=3
+            except:
+                pass
         i+=1
     return string
 def parse_arguments():
@@ -364,6 +367,7 @@ def get_value_comparasion(name):
     return return_value
 
 def get_variable_value(name, arg):
+
     if (name.find(arg).text[:2] == "GF"):
         if (name.find(arg).text[3:] in Global_frame):
             pass
@@ -791,22 +795,22 @@ def sematic_check(root, instruction_number):
             except:
                 sys.exit(56)
             if (values[0][1] == values[1][1] or (values[0][0] == "nil" or values[1][0] == "nil")):
+                old_instruction=instruction_number
+                try:
+                    instruction_number = Labels[name.find('arg1').text]
+                except:
+                    sys.exit(52)
                 if (values[0][0] == values[1][0] and name.get('opcode').upper() == "JUMPIFEQS"):
-                    try:
-                        instruction_number = Labels[name.find('arg1').text]
-                    except:
-                        sys.exit(52)
                     instruction_number += 1
                     sematic_check(root, instruction_number)
                     break
                 if (values[0][0] != values[1][0] and name.get('opcode').upper() == "JUMPIFNEQS"):
-                    try:
-                        instruction_number = Labels[name.find('arg1').text]
-                    except:
-                        sys.exit(52)
+
                     instruction_number += 1
                     sematic_check(root, instruction_number)
                     break
+                else:
+                    instruction_number=old_instruction
             else:
                 sys.exit(53)
 
@@ -905,7 +909,7 @@ def sematic_check(root, instruction_number):
                 try:
                     integer = chr(int(name.find('arg2').text))
                 except:
-                    sys.exit(57)
+                    sys.exit(58)
             save_variable_value(name, "arg1", (integer, "string"))
         if (name.get('opcode').upper() == "WRITE"):
             if(name.find('arg1').attrib['type']=="var"):
@@ -977,7 +981,6 @@ def sematic_check(root, instruction_number):
         if (name.get('opcode').upper() == "EXIT"):
             if(name.find('arg1').attrib['type'] == "var"):
                 exit_code=get_variable_value(name, "arg1")
-                print()
                 if(exit_code==None):
                     sys.exit(56)
                 try:
@@ -1274,10 +1277,10 @@ def sematic_check(root, instruction_number):
                 if(values[0][1] != "bool" or values[1][1] !="bool"):
                     sys.exit(53)
                 if(values[0][0] == "true" or values[1][0] == "true"):
-                    result="false"
+                    result="true"
                     type="bool"
                 else:
-                    result="true"
+                    result="false"
                     type="bool"
             elif(name.get('opcode').upper() == "NOT"):
                 if(name.find('arg2').attrib['type'] == "bool"):
@@ -1293,8 +1296,8 @@ def sematic_check(root, instruction_number):
                             pass
                         else:
                             sys.exit(55)
-                        result=Global_frame[name.find('arg1').text[3:]]
-                        if (return_value == ""):
+                        result=Global_frame[name.find('arg2').text[3:]]
+                        if (result == ""):
                             sys.exit(56)
                     elif (name.find('arg2').text[:2] == "LF"):
                         if (len(FrameStack) == 0):
@@ -1305,8 +1308,8 @@ def sematic_check(root, instruction_number):
                             pass
                         else:
                             sys.exit(55)
-                        result = value[name.find('arg1').text[3:]]
-                        if (return_value == ""):
+                        result = value[name.find('arg2').text[3:]]
+                        if (result == ""):
                             sys.exit(56)
                     elif (name.find('arg2').text[:2] == "TF"):
                         if (name.find('arg2').text[3:] in Temporary_frame):
@@ -1314,7 +1317,7 @@ def sematic_check(root, instruction_number):
                         else:
                             sys.exit(55)
                         result= Temporary_frame[name.find('arg2').text[3:]]
-                        if (return_value == ""):
+                        if (result == ""):
                             sys.exit(56)
                     else:
                         sys.exit(54)
@@ -1364,7 +1367,7 @@ def sematic_check(root, instruction_number):
                 except:
                     sys.exit(53)
                 string=values[0][0]
-                if(position < 0 or position > len(string-1)):
+                if(position < 0 or position > len(string)-1):
                     sys.exit(58)
                 try:
                     result=string[position]
@@ -1405,6 +1408,11 @@ def sematic_check(root, instruction_number):
                     string=Temporary_frame[name.find('arg1').text[3:]]
                 else:
                     exit(55)
+                print(string)
+                if (string[1] != "string"):
+                    sys.exit(53)
+                if (position < 0 or position > len(string[0])):
+                    sys.exit(58)
                 string=string[0]
                 string=list(string)
                 try:
@@ -1420,23 +1428,22 @@ def sematic_check(root, instruction_number):
                 save_variable_value(name, "arg1", (result, type))
         if(name.get('opcode').upper() == "JUMPIFEQ" or name.get('opcode').upper() == "JUMPIFNEQ"):
             values=get_value_comparasion(name)
+            old_instruction=instruction_number
+            try:
+                instruction_number = Labels[name.find('arg1').text]
+            except:
+                sys.exit(52)
             if(values[0][1] == values[1][1] or (values[0][0] == "nil" or values[1][0] == "nil")):
                 if(values[0][0] == values[1][0] and name.get('opcode').upper() == "JUMPIFEQ"):
-                    try:
-                        instruction_number = Labels[name.find('arg1').text]
-                    except:
-                        sys.exit(52)
                     instruction_number += 1
                     sematic_check(root, instruction_number)
                     break
                 if(values[0][0] != values[1][0] and name.get('opcode').upper() == "JUMPIFNEQ"):
-                    try:
-                        instruction_number = Labels[name.find('arg1').text]
-                    except:
-                        sys.exit(52)
                     instruction_number += 1
                     sematic_check(root, instruction_number)
                     break
+                else:
+                    instruction_number=old_instruction
             else:
                 sys.exit(53)
 
