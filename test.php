@@ -138,6 +138,10 @@ if($parser_only == false && $interpreter_only==false){
         if($exist== true) {
             $rc_value = file_get_contents($rc_file);
         }
+        $exist=is_file($outfile);
+        if($exist== false){
+            $dump=fopen($outfile, "w");
+        }
         $exist = is_file($in_file);
         if($exist == false){
             $dump=fopen($in_file, "w");
@@ -170,12 +174,14 @@ if($parser_only == false && $interpreter_only==false){
             continue;
         }
         $command = "diff out1.file " . $outfile;
+        $outfileshell="";
         exec($command, $outfileshell, $result);
         if ($result == 0) {
             $passed++;
         } else {
             $bad_file .= "<tr><td>DIFF ERROR</td> <td>" . $src_array[$i] . "</td></tr>";
             $error_output .="<tr><td>".$src_array[$i]."</td> <td>".implode("",$outfileshell)."</td></tr>";
+            $number_bad_files++;
         }
         $i++;
     }
@@ -297,6 +303,7 @@ if ($interpreter_only == true) {
         } else {
             $bad_file .= "<tr><td>DIFF ERROR</td> <td>" . $src_array[$i] . "</td></tr>";
             $error_output .="<tr><td>".$src_array[$i]."</td> <td>".implode("",$outfileshell)."</td></tr>";
+            $number_bad_files++;
         }
         $i++;
     }
