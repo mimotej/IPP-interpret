@@ -3,8 +3,8 @@ $src_file;
 $in_file;
 $out_file;
 $rc_file;
-$jexam;
-$path;
+$jexam=FALSE;
+$path=FALSE;
 $parser_only=FALSE;
 $interpreter_only=FALSE;
 $recursive=FALSE;
@@ -36,8 +36,8 @@ function getparams(){
 foreach ($options as $index => $value) {
     switch ($index) {
         case "help":
-            echo "toto je napoveda";
-            break;
+            echo "Testovací skript pro parser a interpret\n";
+            exit(0);
         case "directory":
             $path = $value;
             break;
@@ -113,6 +113,13 @@ function get_files($type, $array, $path){
     return $output_array;
 }
 getparams();
+echo $path;
+if($path == FALSE){
+   $path=getcwd();
+}
+if($jexam == FALSE){
+    $jexam="/pub/courses/ipp/jexamxml/jexamxml.jar";
+}
 if($parser_only == false && $interpreter_only==false){
     $src_array = get_files("src", "none", $path);
     $outfileshell;
@@ -125,7 +132,6 @@ if($parser_only == false && $interpreter_only==false){
     $bad_file = "";
     $passed = 0;
     $d = 0;
-    $error_output="<TABLE><tr><td colspan='2'>DIFF ERROR-OUTPUTS</td></tr><tr><td>Soubor</td> <td>Výpis</td></tr>";
     while ($i < count($src_array)) {
         $without_extension = substr_replace($src_array[$i], "", -4);
         $outfile = $without_extension . ".out";
@@ -150,7 +156,7 @@ if($parser_only == false && $interpreter_only==false){
         exec($command, $outfileshell, $result_parse);
         if($result_parse != 0) {
             if ($rc_value != $result_parse) {
-                $bad_file .= "<tr><td>RC error - parser</td> <td>" . $src_array[$i] . "</td></tr>";
+                $bad_file .= "<tr><td>RC error - parser</td> <td>" . $without_extension . "</td></tr>";
                 $number_bad_files++;
                 $i++;
                 continue;
@@ -163,7 +169,7 @@ if($parser_only == false && $interpreter_only==false){
             $outfile="";
         }
         if ($rc_value != $result_interpret) {
-            $bad_file .= "<tr><td>RC error</td> <td>" . $src_array[$i] . "  [" . "má být -> ".$rc_value ." bylo -> " .$result_interpret. "]</td></tr>";
+            $bad_file .= "<tr><td>RC error - Interpret</td> <td>" . $without_extension . "  [" . "ma byt -> ".$rc_value ." bylo -> " .$result_interpret. "]</td></tr>";
             $number_bad_files++;
             $i++;
             continue;
@@ -179,8 +185,7 @@ if($parser_only == false && $interpreter_only==false){
         if ($result == 0) {
             $passed++;
         } else {
-            $bad_file .= "<tr><td>DIFF ERROR</td> <td>" . $src_array[$i] . "</td></tr>";
-            $error_output .="<tr><td>".$src_array[$i]."</td> <td>".implode("",$outfileshell)."</td></tr>";
+            $bad_file .= "<tr><td>DIFF ERROR</td> <td>" . $without_extension . "</td><td>".implode("",$outfileshell)."</td</tr>";
             $number_bad_files++;
         }
         $i++;
@@ -189,7 +194,7 @@ if($parser_only == false && $interpreter_only==false){
     $output_html = "<HTML><BODY style=\"margin: 0 auto; width: 1280px;\"><H1>Vysledky testu</H1><H3>Typ testu: " . $type . "</H3>";
     $output_html .= "<table>" . "<tr><td>Proslo</td><td>Neproslo</td></tr><tr><td>" . $passed . "</td><td>" . $number_bad_files . "</td></tr></table>";
     $output_html .= "<H3>Chybne testy:</H3><table><tr><td>Typ chyby</td><td>Soubor</td></tr>" . $bad_file . "</table>";
-    $output_html.= $error_output."</TABLE>";
+
 }
 if ($parser_only == true) {
     $src_array = get_files("src", "none", $path);
@@ -222,7 +227,7 @@ if ($parser_only == true) {
         }
         $rc_value = file_get_contents($rc_file);
         if ($rc_value != $result_parse) {
-            $bad_file .= "<tr><td>RC error</td> <td>" . $src_array[$i] . "</td></tr>";
+            $bad_file .= "<tr><td>RC error</td> <td>" . $without_extension . "</td></tr>";
             $number_bad_files++;
             $i++;
             continue;
@@ -234,10 +239,10 @@ if ($parser_only == true) {
         }
         $command = "java -jar " . $jexam . " ./out.file " . "./" . $outfile;
         exec($command, $outfileshell, $result);
-        if ($result_parse == 0) {
+        if ($result_parse == 0) {   
             $passed++;
         } else {
-            $bad_file .= "<tr><td>JEXAMXL error</td> <td>" . $src_array[$i] . "</td></tr>";
+            $bad_file .= "<tr><td>JEXAMXL error</td> <td>" . $without_extension . "</td></tr>";
             $number_bad_files++;
         }
         $i++;
@@ -248,6 +253,8 @@ if ($parser_only == true) {
     $output_html = "<HTML><BODY style=\"margin: 0 auto; width: 1280px;\"><H1>Vysledky testu</H1><H3>Typ testu: " . $type . "</H3>";
     $output_html .= "<table>" . "<tr><td>Proslo</td><td>Neproslo</td></tr><tr><td>" . $passed . "</td><td>" . $number_bad_files . "</td></tr></table>";
     $output_html .= "<H3>Chybne testy:</H3><table><tr><td>Typ chyby</td><td>Soubor</td></tr>" . $bad_file . "</table>";
+    $file_pointer="out1.file";
+    unlink($file_pointer);
 }
 if ($interpreter_only == true) {
     $src_array = get_files("src", "none", $path);
@@ -286,7 +293,7 @@ if ($interpreter_only == true) {
         }
         $rc_value = file_get_contents($rc_file);
         if ($rc_value != $result_interpret) {
-            $bad_file .= "<tr><td>RC error</td> <td>" . $src_array[$i] . "  [" . "má být -> ".$rc_value ." bylo -> " .$result_interpret. "]</td></tr>";
+            $bad_file .= "<tr><td>RC error</td> <td>" . $without_extension . "  [" . "má být -> ".$rc_value ." bylo -> " .$result_interpret. "]</td></tr>";
             $number_bad_files++;
             $i++;
             continue;
@@ -301,8 +308,8 @@ if ($interpreter_only == true) {
         if ($result == 0) {
             $passed++;
         } else {
-            $bad_file .= "<tr><td>DIFF ERROR</td> <td>" . $src_array[$i] . "</td></tr>";
-            $error_output .="<tr><td>".$src_array[$i]."</td> <td>".implode("",$outfileshell)."</td></tr>";
+            $bad_file .= "<tr><td>DIFF ERROR</td> <td>" . $without_extension . "</td></tr>";
+            $error_output .="<tr><td>".$without_extension."</td> <td>".implode("",$outfileshell)."</td></tr>";
             $number_bad_files++;
         }
         $i++;
@@ -316,8 +323,6 @@ if ($interpreter_only == true) {
     $output_html.= $error_output."</TABLE>";
 }
 $file_pointer="out.file";
-unlink($file_pointer);
-$file_pointer="out1.file";
 unlink($file_pointer);
 $close_body="</BODY></HTML>";
 $output_html.=$close_body;

@@ -15,6 +15,8 @@ def escape_sequence(string):
     if(string is None):
         return string
     for c in string:
+        if(c=="#"):
+            sys.exit(32)
         if(c == '\\'):
             try:
                 if(string[i+1]=="0"):
@@ -218,7 +220,7 @@ def find_value(arg, name):
                 if(len(Global_frame[name.find(arg).text[3:]]) == 0):
                     sys.exit(56)
                 if (Global_frame[name.find(arg).text[3:]][1] != "int" and Global_frame[name.find(arg).text[3:]][1] != "float"):
-                    exit(55)
+                    exit(53)
             else:
                 sys.exit(54)
             value.append(Global_frame[name.find(arg).text[3:]][0])
@@ -232,7 +234,7 @@ def find_value(arg, name):
                 if(len(frame[name.find(arg).text[3:]]) == 0):
                     sys.exit(56)
                 if (frame[name.find(arg).text[3:]][1] != "int" and frame[name.find(arg).text[3:]][1] != "float"):
-                    sys.exit(55)
+                    sys.exit(53)
             else:
                 sys.exit(54)
             value.append(frame[name.find(arg).text[3:]][0])
@@ -244,7 +246,7 @@ def find_value(arg, name):
                 if(len(Temporary_frame[name.find(arg).text[3:]]) == 0):
                     sys.exit(56)
                 if (Temporary_frame[name.find(arg).text[3:]][1] != "int" and Temporary_frame[name.find(arg).text[3:]][1] != "float"):
-                    sys.exit(55)
+                    sys.exit(53)
             else:
                 sys.exit(54)
             value.append(Temporary_frame[name.find(arg).text[3:]][0])
@@ -983,6 +985,8 @@ def sematic_check(root, instruction_number):
         if (name.get('opcode').upper() == "EXIT"):
             if(name.find('arg1').attrib['type'] == "var"):
                 exit_code=get_variable_value(name, "arg1")
+                if(exit_code[1] != "int"):
+                    sys.exit(53)
                 if(exit_code==None):
                     sys.exit(56)
                 try:
@@ -998,8 +1002,10 @@ def sematic_check(root, instruction_number):
                     exit_code=int(name.find('arg1').text)
                 except:
                     sys.exit(53)
+                if(name.find('arg1').attrib['type'] != "int"):
+                    sys.exit(53)
 
-            if( exit_code in range(0,49)):
+            if( exit_code in range(0,50)):
                 sys.exit(exit_code)
             else:
                 sys.exit(57)
